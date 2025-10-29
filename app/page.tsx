@@ -1,31 +1,53 @@
 // app/page.tsx
 
-import { createClient } from "@/lib/supabase/server"; // @ sembolü src veya kök dizini temsil eder, Next.js bunu otomatik ayarlar.
+import { createClient } from "@/lib/supabase/server";
+import { redirect } from "next/navigation";
 
 export default async function HomePage() {
-  // Sunucu tarafında çalışacak Supabase istemcisini oluşturuyoruz.
   const supabase = await createClient();
 
-  // 'dersler' tablosundan tüm verileri çekiyoruz.
-  // select('*') -> tüm sütunları seç demek.
-  const { data: dersler, error } = await supabase.from('dersler').select('*');
+  // Mevcut kullanıcı oturum bilgisini çekiyoruz.
+  const { data: { user } } = await supabase.auth.getUser();
 
-  // Eğer veri çekerken bir hata olursa, hatayı konsolda göster.
-  if (error) {
-    console.error('Dersler çekilirken hata oluştu:', error);
-  }
+  // Dersler verisini çekiyoruz.
+  const { data: dersler } = await supabase.from('dersler').select('*');
+
+  // Çıkış yapma fonksiyonu (Server Action)
+  const signOut = async () => {
+    "use server";
+    const supabase = await createClient();
+    await supabase.auth.signOut();
+    return redirect("/login"); // Çıkış yaptıktan sonra login sayfasına yönlendir
+  };
 
   return (
-    <main className="flex min-h-screen flex-col items-center p-24">
-      <h1 className="text-4xl font-bold mb-8">VipAnaliz Dersleri</h1>
+    <main style={{ padding: '2rem' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
+        <h1 style={{ fontSize: '2rem', fontWeight: 'bold' }}>VipAnaliz Dersleri</h1>
+        
+        {/* KULLANICI DURUMUNA GÖRE DİNAMİK ALAN */}
+        {user ? (
+          <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+            <span>Merhaba, {user.email}</span>
+            <form>
+              <button formAction={signOut}>Çıkış Yap</button>
+            </form>
+          </div>
+        ) : (
+          <a href="/login">
+            <button>Giriş Yap</button>
+          </a>
+        )}
+      </div>
 
-      <div className="w-full max-w-2xl">
+      {/* DERS LİSTESİ */}
+      <div>
         {dersler && dersler.length > 0 ? (
-          <ul className="space-y-4">
+          <ul style={{ listStyle: 'none', padding: 0, display: 'flex', flexDirection: 'column', gap: '1rem' }}>
             {dersler.map((ders) => (
-              <li key={ders.id} className="p-4 bg-gray-100 rounded-lg shadow">
-                <h2 className="text-2xl font-semibold text-gray-800">{ders.isim}</h2>
-                <p className="text-gray-600">{ders.aciklama}</p>
+              <li key={ders.id} style={{ padding: '1rem', border: '1px solid #ccc', borderRadius: '8px' }}>
+                <h2 style={{ fontSize: '1.5rem', margin: 0 }}>{ders.isim}</h2>
+                <p style={{ color: '#555', margin: '0.5rem 0 0 0' }}>{ders.aciklama}</p>
               </li>
             ))}
           </ul>
