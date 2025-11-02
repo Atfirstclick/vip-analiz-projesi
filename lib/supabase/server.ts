@@ -3,9 +3,8 @@
 import { createServerClient, type CookieOptions } from '@supabase/ssr'
 import { cookies } from 'next/headers'
 
-// Fonksiyonu 'async' olarak işaretliyoruz
+// Mevcut createClient fonksiyonun
 export const createClient = async () => { 
-  // 'cookies()' fonksiyonunun sonucunu 'await' ile bekliyoruz
   const cookieStore = await cookies() 
 
   return createServerClient(
@@ -37,4 +36,29 @@ export const createClient = async () => {
       },
     }
   )
+}
+
+// Yeni yardımcı fonksiyonlar
+export async function getCurrentUser() {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  return user
+}
+
+export async function getUserProfile(userId: string) {
+  const supabase = await createClient()
+  const { data } = await supabase
+    .from('profiles')
+    .select('*')
+    .eq('id', userId)
+    .single()
+  return data
+}
+
+export async function isAdmin() {
+  const user = await getCurrentUser()
+  if (!user) return false
+  
+  const profile = await getUserProfile(user.id)
+  return profile?.role === 'admin'
 }
