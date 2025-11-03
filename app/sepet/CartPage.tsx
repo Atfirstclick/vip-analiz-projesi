@@ -164,7 +164,7 @@ export default function CartPage({ cartItems: initialItems }: { cartItems: CartI
                 className="bg-white rounded-lg shadow-sm p-6 flex gap-6"
               >
                 {/* Ürün Görseli */}
-                <div className="w-32 h-32 flex-shrink-0 bg-gradient-to-br from-blue-50 to-indigo-50 rounded-lg flex items-center justify-center">
+                <div className="w-32 h-32 shrink-0 bg-linear-to-br from-blue-50 to-indigo-50 rounded-lg flex items-center justify-center">
                   {item.product_variants.products.image_url ? (
                     <img
                       src={item.product_variants.products.image_url}
