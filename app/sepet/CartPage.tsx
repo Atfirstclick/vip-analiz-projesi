@@ -37,6 +37,7 @@ export default function CartPage({ cartItems: initialItems }: { cartItems: CartI
   const [cartItems, setCartItems] = useState(initialItems)
   const [updating, setUpdating] = useState<string | null>(null)
   const [message, setMessage] = useState({ type: '', text: '' })
+  const [processingPayment, setProcessingPayment] = useState(false)
 
   async function handleQuantityChange(itemId: string, newQuantity: number) {
     if (newQuantity < 1) return
@@ -69,6 +70,38 @@ export default function CartPage({ cartItems: initialItems }: { cartItems: CartI
       setMessage({ type: 'error', text: 'Ürün çıkarılamadı' })
     } finally {
       setUpdating(null)
+    }
+  }
+
+  async function handleCheckout() {
+    setProcessingPayment(true)
+    setMessage({ type: '', text: '' })
+    
+    try {
+      console.log('Ödeme başlatılıyor...')
+      
+      const response = await fetch('/api/payment/initiate', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      })
+
+      console.log('Response:', response.status)
+
+      const data = await response.json()
+      console.log('Data:', data)
+
+      if (data.success) {
+        router.push(`/odeme?token=${data.token}&orderNumber=${data.orderNumber}`)
+      } else {
+        setMessage({ type: 'error', text: data.error || 'Ödeme başlatılamadı' })
+      }
+    } catch (error) {
+      console.error('Checkout error:', error)
+      setMessage({ type: 'error', text: 'Bir hata oluştu' })
+    } finally {
+      setProcessingPayment(false)
     }
   }
 
@@ -131,7 +164,7 @@ export default function CartPage({ cartItems: initialItems }: { cartItems: CartI
                 className="bg-white rounded-lg shadow-sm p-6 flex gap-6"
               >
                 {/* Ürün Görseli */}
-                <div className="w-32 h-32 shrink-0 bg-linear-to-br from-blue-50 to-indigo-50 rounded-lg flex items-center justify-center">
+                <div className="w-32 h-32 flex-shrink-0 bg-gradient-to-br from-blue-50 to-indigo-50 rounded-lg flex items-center justify-center">
                   {item.product_variants.products.image_url ? (
                     <img
                       src={item.product_variants.products.image_url}
@@ -225,40 +258,41 @@ export default function CartPage({ cartItems: initialItems }: { cartItems: CartI
             ))}
           </div>
 
-            {/* Sağ: Sipariş Özeti */}
-            <div className="lg:col-span-1">
+          {/* Sağ: Sipariş Özeti */}
+          <div className="lg:col-span-1">
             <div className="bg-white rounded-lg shadow-sm p-6 sticky top-6">
-                <h2 className="text-xl font-bold text-gray-900 mb-6">
+              <h2 className="text-xl font-bold text-gray-900 mb-6">
                 Sipariş Özeti
-                </h2>
+              </h2>
 
-                <div className="space-y-3 mb-6 pb-6 border-b">
+              <div className="space-y-3 mb-6 pb-6 border-b">
                 <div className="flex justify-between text-gray-600">
-                    <span>Ara Toplam</span>
-                    <span>{formatPrice(subtotal)}</span>
+                  <span>Ara Toplam</span>
+                  <span>{formatPrice(subtotal)}</span>
                 </div>
-                {/* KDV satırı KALDIRILDI - Fiyatlar zaten KDV dahil */}
-                </div>
+              </div>
 
-                <div className="flex justify-between text-xl font-bold text-gray-900 mb-6">
+              <div className="flex justify-between text-xl font-bold text-gray-900 mb-6">
                 <span>Toplam</span>
                 <span className="text-blue-600">{formatPrice(subtotal)}</span>
-                </div>
+              </div>
 
-                <button
-                className="w-full bg-blue-600 text-white py-4 px-6 rounded-lg font-semibold hover:bg-blue-700 transition-colors mb-4"
-                >
-                Ödemeye Geç
-                </button>
+              <button
+                onClick={handleCheckout}
+                disabled={processingPayment}
+                className="w-full bg-blue-600 text-white py-4 px-6 rounded-lg font-semibold hover:bg-blue-700 disabled:bg-blue-300 disabled:cursor-not-allowed transition-colors mb-4"
+              >
+                {processingPayment ? 'Hazırlanıyor...' : 'Ödemeye Geç'}
+              </button>
 
-                <Link
+              <Link
                 href="/urunler"
                 className="block text-center text-blue-600 hover:text-blue-700 font-medium"
-                >
+              >
                 ← Alışverişe Devam Et
-                </Link>
+              </Link>
             </div>
-            </div>
+          </div>
         </div>
       </div>
     </div>
