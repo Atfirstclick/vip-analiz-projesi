@@ -4,7 +4,6 @@ import UserManagementClient from './UserManagementClient'
 export default async function KullanicilarPage() {
   const supabase = await createClient()
 
-  // Tüm kullanıcıları çek (artık email de profiles'ta)
   const { data: users, error } = await supabase
     .from('profiles')
     .select('id, full_name, email, role, phone, created_at')
@@ -20,16 +19,14 @@ export default async function KullanicilarPage() {
 
   return (
     <div>
-      <div className="mb-8">
+      <div className="mb-6">
         <h1 className="text-3xl font-bold text-gray-900">Kullanıcı Yönetimi</h1>
         <p className="mt-2 text-gray-600">
-          Sistemdeki tüm kullanıcıları görüntüle ve rollerini yönet
+          Kullanıcıları görüntüle, ekle, sil ve rollerini yönet
         </p>
       </div>
 
-      <div className="bg-white shadow rounded-lg overflow-hidden">
-        <UserManagementClient users={users || []} />
-      </div>
+      <UserManagementClient users={users || []} />
     </div>
   )
 }

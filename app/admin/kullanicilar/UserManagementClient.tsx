@@ -23,11 +23,93 @@ export default function UserManagementClient({ users }: { users: User[] }) {
   const [userList, setUserList] = useState(users)
   const [updating, setUpdating] = useState<string | null>(null)
   const [message, setMessage] = useState({ type: '', text: '' })
+  const [showAddModal, setShowAddModal] = useState(false)
+  const [formData, setFormData] = useState({
+    email: '',
+    password: '',
+    full_name: '',
+    phone: '',
+    role: 'student'
+  })
+  const [loading, setLoading] = useState(false)
 
   const supabase = createBrowserClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
   )
+
+  async function refreshUsers() {
+    const { data } = await supabase
+      .from('profiles')
+      .select('id, full_name, email, role, phone, created_at')
+      .order('created_at', { ascending: false })
+    
+    if (data) {
+      setUserList(data)
+    }
+  }
+
+  async function handleAddUser(e: React.FormEvent) {
+    e.preventDefault()
+    setLoading(true)
+    setMessage({ type: '', text: '' })
+
+    try {
+      const response = await fetch('/api/admin/users/create', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(formData)
+      })
+
+      const data = await response.json()
+
+      if (response.ok) {
+        setMessage({ type: 'success', text: '✓ Kullanıcı başarıyla eklendi!' })
+        setFormData({
+          email: '',
+          password: '',
+          full_name: '',
+          phone: '',
+          role: 'student'
+        })
+        setShowAddModal(false)
+        await refreshUsers()
+        setTimeout(() => setMessage({ type: '', text: '' }), 3000)
+      } else {
+        setMessage({ type: 'error', text: data.error || 'Bir hata oluştu' })
+      }
+    } catch (error) {
+      setMessage({ type: 'error', text: 'Kullanıcı eklenemedi' })
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  async function handleDeleteUser(userId: string, userName: string) {
+    if (!confirm(`"${userName}" kullanıcısını silmek istediğinize emin misiniz?`)) {
+      return
+    }
+
+    setMessage({ type: '', text: '' })
+
+    try {
+      const response = await fetch(`/api/admin/users/delete?userId=${userId}`, {
+        method: 'DELETE'
+      })
+
+      const data = await response.json()
+
+      if (response.ok) {
+        setMessage({ type: 'success', text: '✓ Kullanıcı silindi' })
+        await refreshUsers()
+        setTimeout(() => setMessage({ type: '', text: '' }), 3000)
+      } else {
+        setMessage({ type: 'error', text: data.error || 'Silinemedi' })
+      }
+    } catch (error) {
+      setMessage({ type: 'error', text: 'Kullanıcı silinemedi' })
+    }
+  }
 
   async function updateUserRole(userId: string, newRole: string) {
     try {
@@ -41,7 +123,6 @@ export default function UserManagementClient({ users }: { users: User[] }) {
 
       if (error) throw error
 
-      // Listeyi güncelle
       setUserList(prev =>
         prev.map(user =>
           user.id === userId ? { ...user, role: newRole } : user
@@ -53,7 +134,6 @@ export default function UserManagementClient({ users }: { users: User[] }) {
         text: 'Rol başarıyla güncellendi!' 
       })
 
-      // Mesajı 3 saniye sonra temizle
       setTimeout(() => setMessage({ type: '', text: '' }), 3000)
     } catch (error: any) {
       setMessage({ 
@@ -91,8 +171,8 @@ export default function UserManagementClient({ users }: { users: User[] }) {
         </div>
       )}
 
-      {/* İstatistik Özeti */}
-      <div className="px-6 py-4 border-b border-gray-200">
+      {/* İstatistik Özeti + Yeni Kullanıcı Butonu */}
+      <div className="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
         <div className="flex items-center gap-6 text-sm">
           <span className="text-gray-600">
             Toplam: <span className="font-semibold text-gray-900">{userList.length}</span>
@@ -106,6 +186,12 @@ export default function UserManagementClient({ users }: { users: User[] }) {
             )
           })}
         </div>
+        <button
+          onClick={() => setShowAddModal(true)}
+          className="bg-blue-600 text-white px-4 py-2 rounded-lg font-medium hover:bg-blue-700 transition-colors text-sm"
+        >
+          + Yeni Kullanıcı
+        </button>
       </div>
 
       {/* Kullanıcı Tablosu */}
@@ -130,6 +216,9 @@ export default function UserManagementClient({ users }: { users: User[] }) {
               </th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                 Kullanıcı Rolü
+              </th>
+              <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                İşlemler
               </th>
             </tr>
           </thead>
@@ -181,6 +270,14 @@ export default function UserManagementClient({ users }: { users: User[] }) {
                       </div>
                     )}
                   </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-right text-sm">
+                    <button
+                      onClick={() => handleDeleteUser(user.id, user.full_name || 'Bu kullanıcı')}
+                      className="text-red-600 hover:text-red-900 font-medium"
+                    >
+                      Sil
+                    </button>
+                  </td>
                 </tr>
               )
             })}
@@ -194,6 +291,116 @@ export default function UserManagementClient({ users }: { users: User[] }) {
           </div>
         )}
       </div>
+
+      {/* Yeni Kullanıcı Modal */}
+      {showAddModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg max-w-md w-full p-6">
+            <div className="flex justify-between items-center mb-6">
+              <h2 className="text-2xl font-bold text-gray-900">Yeni Kullanıcı Ekle</h2>
+              <button
+                onClick={() => setShowAddModal(false)}
+                className="text-gray-400 hover:text-gray-600 text-2xl"
+              >
+                ×
+              </button>
+            </div>
+
+            <form onSubmit={handleAddUser} className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Email *
+                </label>
+                <input
+                  type="email"
+                  value={formData.email}
+                  onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  placeholder="ornek@email.com"
+                  required
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Şifre *
+                </label>
+                <input
+                  type="password"
+                  value={formData.password}
+                  onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  placeholder="En az 6 karakter"
+                  minLength={6}
+                  required
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Ad Soyad *
+                </label>
+                <input
+                  type="text"
+                  value={formData.full_name}
+                  onChange={(e) => setFormData({ ...formData, full_name: e.target.value })}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  placeholder="Ahmet Yılmaz"
+                  required
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Telefon
+                </label>
+                <input
+                  type="tel"
+                  value={formData.phone}
+                  onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  placeholder="05XX XXX XX XX"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Rol *
+                </label>
+                <select
+                  value={formData.role}
+                  onChange={(e) => setFormData({ ...formData, role: e.target.value })}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  required
+                >
+                  {ROLES.map(role => (
+                    <option key={role.value} value={role.value}>
+                      {role.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="flex gap-3 pt-4">
+                <button
+                  type="button"
+                  onClick={() => setShowAddModal(false)}
+                  className="flex-1 px-4 py-2 border border-gray-300 rounded-lg font-medium text-gray-700 hover:bg-gray-50 transition-colors"
+                >
+                  İptal
+                </button>
+                <button
+                  type="submit"
+                  disabled={loading}
+                  className="flex-1 bg-blue-600 text-white px-4 py-2 rounded-lg font-medium hover:bg-blue-700 disabled:bg-blue-300 disabled:cursor-not-allowed transition-colors"
+                >
+                  {loading ? 'Ekleniyor...' : 'Ekle'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

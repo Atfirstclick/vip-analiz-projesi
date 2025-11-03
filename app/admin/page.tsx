@@ -41,6 +41,7 @@ export default async function AdminDashboard() {
         </p>
       </div>
 
+      {/* İstatistikler */}
       <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
         <div className="bg-white overflow-hidden shadow rounded-lg">
           <div className="p-5">
@@ -123,31 +124,39 @@ export default async function AdminDashboard() {
         </div>
       </div>
 
+      {/* Hızlı Erişim */}
       <div className="mt-8">
         <h2 className="text-lg font-medium text-gray-900 mb-4">Hızlı Erişim</h2>
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          
+          {/* Kullanıcı Yönetimi - Aktif */}
           <Link
             href="/admin/kullanicilar"
-            className="relative block p-6 bg-white border border-gray-200 rounded-lg shadow-sm hover:shadow-md transition-shadow"
+            className="bg-white p-6 rounded-lg shadow-sm hover:shadow-md transition-shadow border-l-4 border-blue-500"
           >
             <h3 className="text-lg font-semibold text-gray-900 mb-2">
               👥 Kullanıcı Yönetimi
             </h3>
             <p className="text-sm text-gray-600">
-              Kullanıcıları görüntüle ve rollerini yönet
+              Kullanıcıları görüntüle, ekle, sil ve rollerini yönet
             </p>
           </Link>
 
-          <div className="relative block p-6 bg-gray-50 border border-gray-200 rounded-lg shadow-sm opacity-60">
+          {/* Ürün Yönetimi - Aktif */}
+          <Link
+            href="/admin/urunler"
+            className="bg-white p-6 rounded-lg shadow-sm hover:shadow-md transition-shadow border-l-4 border-orange-500"
+          >
             <h3 className="text-lg font-semibold text-gray-900 mb-2">
               📦 Ürün Yönetimi
             </h3>
             <p className="text-sm text-gray-600">
-              Yakında... (FAZ 2)
+              Ürünleri ve varyantlarını yönet
             </p>
-          </div>
+          </Link>
 
-          <div className="relative block p-6 bg-gray-50 border border-gray-200 rounded-lg shadow-sm opacity-60">
+          {/* Randevu Yönetimi - Pasif */}
+          <div className="bg-gray-50 p-6 rounded-lg shadow-sm border-l-4 border-gray-300 opacity-60 cursor-not-allowed">
             <h3 className="text-lg font-semibold text-gray-900 mb-2">
               📅 Randevu Yönetimi
             </h3>
@@ -155,6 +164,7 @@ export default async function AdminDashboard() {
               Yakında... (FAZ 3)
             </p>
           </div>
+
         </div>
       </div>
     </div>
