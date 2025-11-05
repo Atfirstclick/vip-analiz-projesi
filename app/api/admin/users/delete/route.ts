@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@/lib/supabase/server'
-import { getCurrentUser } from '@/lib/supabase/server'
+import { createClient } from '@supabase/supabase-js'
+import { getCurrentUser, createClient as createServerClient } from '@/lib/supabase/server'
 
 export async function DELETE(request: NextRequest) {
   try {
@@ -10,7 +10,7 @@ export async function DELETE(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const supabase = await createClient()
+    const supabase = await createServerClient()
 
     // Admin kontrolü
     const { data: adminProfile } = await supabase
@@ -37,22 +37,27 @@ export async function DELETE(request: NextRequest) {
       }, { status: 400 })
     }
 
-    // Profile silme (auth.users cascade ile silinecek)
-    const { error: profileError } = await supabase
-      .from('profiles')
-      .delete()
-      .eq('id', userId)
+    // Service Role ile admin client
+    const supabaseAdmin = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY!,
+      {
+        auth: {
+          autoRefreshToken: false,
+          persistSession: false
+        }
+      }
+    )
 
-    if (profileError) {
-      console.error('Profile delete error:', profileError)
+    // Auth.users'tan sil (bu profiles'ı da cascade ile siler)
+    const { error: authError } = await supabaseAdmin.auth.admin.deleteUser(userId)
+
+    if (authError) {
+      console.error('Auth delete error:', authError)
       return NextResponse.json({ 
-        error: 'Kullanıcı silinemedi' 
+        error: 'Kullanıcı silinemedi: ' + authError.message 
       }, { status: 500 })
     }
-
-    // NOT: auth.users silme için Service Role Key gerekli
-    // Şimdilik sadece profile siliyoruz
-    // Production'da Supabase Service Role ile auth.users da silinmeli
 
     return NextResponse.json({ success: true })
 

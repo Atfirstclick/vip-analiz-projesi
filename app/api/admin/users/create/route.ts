@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@/lib/supabase/server'
-import { getCurrentUser } from '@/lib/supabase/server'
+import { createClient } from '@supabase/supabase-js'
+import { getCurrentUser, createClient as createServerClient } from '@/lib/supabase/server'
 
 export async function POST(request: NextRequest) {
   try {
@@ -11,7 +11,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Admin kontrolü
-    const supabase = await createClient()
+    const supabase = await createServerClient()
     const { data: adminProfile } = await supabase
       .from('profiles')
       .select('role')
@@ -38,29 +38,45 @@ export async function POST(request: NextRequest) {
       }, { status: 400 })
     }
 
-    // Admin Supabase client (service role) gerekli
-    // Şimdilik normal client ile deneyeceğiz
-    const { data: newUser, error: authError } = await supabase.auth.signUp({
+    // Service Role ile admin client oluştur (admin session'ı etkilemez!)
+    const supabaseAdmin = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY!,
+      {
+        auth: {
+          autoRefreshToken: false,
+          persistSession: false
+        }
+      }
+    )
+
+    // Kullanıcı oluştur (admin session'ı korunur!)
+    const { data: newUser, error: authError } = await supabaseAdmin.auth.admin.createUser({
       email,
       password,
-      options: {
-        data: {
-          full_name,
-          phone: phone || null,
-        }
+      email_confirm: true, // Email doğrulaması gerekmesin
+      user_metadata: {
+        full_name,
+        phone: phone || null,
       }
     })
 
     if (authError) {
       console.error('Auth error:', authError)
+      
+      // Türkçe hata mesajı
+      let errorMessage = authError.message
+      if (authError.code === 'email_exists') {
+        errorMessage = 'Bu email adresi zaten kayıtlı!'
+      }
+      
       return NextResponse.json({ 
-        error: authError.message 
+        error: errorMessage 
       }, { status: 400 })
     }
-
-    // Profile güncellemesi (trigger otomatik oluşturur ama rol ekleyelim)
+    // Profile güncellemesi
     if (newUser.user) {
-      const { error: profileError } = await supabase
+      const { error: profileError } = await supabaseAdmin
         .from('profiles')
         .update({ 
           role: role || 'student',

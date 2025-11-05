@@ -32,6 +32,15 @@ export default function UserManagementClient({ users }: { users: User[] }) {
     role: 'student'
   })
   const [loading, setLoading] = useState(false)
+  const [showEditModal, setShowEditModal] = useState(false)
+const [editingUser, setEditingUser] = useState<User | null>(null)
+const [editFormData, setEditFormData] = useState({
+  email: '',
+  password: '', // Boş bırakılırsa şifre değişmez
+  full_name: '',
+  phone: '',
+  role: 'student'
+})
 
   const supabase = createBrowserClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -49,41 +58,91 @@ export default function UserManagementClient({ users }: { users: User[] }) {
     }
   }
 
-  async function handleAddUser(e: React.FormEvent) {
-    e.preventDefault()
-    setLoading(true)
-    setMessage({ type: '', text: '' })
+async function handleAddUser(e: React.FormEvent) {
+  e.preventDefault()
+  setLoading(true)
+  setMessage({ type: '', text: '' })
 
-    try {
-      const response = await fetch('/api/admin/users/create', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(formData)
+  try {
+    const response = await fetch('/api/admin/users/create', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(formData)
+    })
+
+    const data = await response.json()
+
+    if (response.ok) {
+      setMessage({ type: 'success', text: '✓ Kullanıcı başarıyla eklendi!' })
+      setFormData({
+        email: '',
+        password: '',
+        full_name: '',
+        phone: '',
+        role: 'student'
       })
-
-      const data = await response.json()
-
-      if (response.ok) {
-        setMessage({ type: 'success', text: '✓ Kullanıcı başarıyla eklendi!' })
-        setFormData({
-          email: '',
-          password: '',
-          full_name: '',
-          phone: '',
-          role: 'student'
-        })
-        setShowAddModal(false)
-        await refreshUsers()
-        setTimeout(() => setMessage({ type: '', text: '' }), 3000)
-      } else {
-        setMessage({ type: 'error', text: data.error || 'Bir hata oluştu' })
-      }
-    } catch (error) {
-      setMessage({ type: 'error', text: 'Kullanıcı eklenemedi' })
-    } finally {
-      setLoading(false)
+      setShowAddModal(false)
+      await refreshUsers()
+      setTimeout(() => setMessage({ type: '', text: '' }), 3000)
+    } else {
+      // Hata mesajını göster ama modal'ı kapatma
+      setMessage({ type: 'error', text: data.error || 'Bir hata oluştu' })
+      // Modal açık kalsın, loading false olsun
     }
+  } catch (error) {
+    setMessage({ type: 'error', text: 'Kullanıcı eklenemedi' })
+  } finally {
+    setLoading(false) // Her durumda loading'i kapat
   }
+}
+
+function openEditModal(user: User) {
+  setEditingUser(user)
+  setEditFormData({
+    email: user.email || '',
+    password: '', // Şifre boş
+    full_name: user.full_name || '',
+    phone: user.phone || '',
+    role: user.role
+  })
+  setShowEditModal(true)
+  setMessage({ type: '', text: '' })
+}
+
+async function handleUpdateUser(e: React.FormEvent) {
+  e.preventDefault()
+  if (!editingUser) return
+
+  setLoading(true)
+  setMessage({ type: '', text: '' })
+
+  try {
+    const response = await fetch('/api/admin/users/update', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        userId: editingUser.id,
+        ...editFormData
+      })
+    })
+
+    const data = await response.json()
+
+    if (response.ok) {
+      setMessage({ type: 'success', text: '✓ Kullanıcı başarıyla güncellendi!' })
+      setShowEditModal(false)
+      setEditingUser(null)
+      await refreshUsers()
+      setTimeout(() => setMessage({ type: '', text: '' }), 3000)
+    } else {
+      setMessage({ type: 'error', text: data.error || 'Güncellenemedi' })
+    }
+  } catch (error) {
+    setMessage({ type: 'error', text: 'Kullanıcı güncellenemedi' })
+  } finally {
+    setLoading(false)
+  }
+}
 
   async function handleDeleteUser(userId: string, userName: string) {
     if (!confirm(`"${userName}" kullanıcısını silmek istediğinize emin misiniz?`)) {
@@ -271,13 +330,19 @@ export default function UserManagementClient({ users }: { users: User[] }) {
                     )}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-right text-sm">
-                    <button
-                      onClick={() => handleDeleteUser(user.id, user.full_name || 'Bu kullanıcı')}
-                      className="text-red-600 hover:text-red-900 font-medium"
-                    >
-                      Sil
-                    </button>
-                  </td>
+                  <button
+                    onClick={() => openEditModal(user)}
+                    className="text-blue-600 hover:text-blue-900 font-medium mr-4"
+                  >
+                    Düzenle
+                  </button>
+                  <button
+                    onClick={() => handleDeleteUser(user.id, user.full_name || 'Bu kullanıcı')}
+                    className="text-red-600 hover:text-red-900 font-medium"
+                  >
+                    Sil
+                  </button>
+                </td>
                 </tr>
               )
             })}
@@ -299,14 +364,37 @@ export default function UserManagementClient({ users }: { users: User[] }) {
             <div className="flex justify-between items-center mb-6">
               <h2 className="text-2xl font-bold text-gray-900">Yeni Kullanıcı Ekle</h2>
               <button
-                onClick={() => setShowAddModal(false)}
+                onClick={() => {
+                  setShowAddModal(false)
+                  setMessage({ type: '', text: '' }) // Mesajı temizle
+                }}
                 className="text-gray-400 hover:text-gray-600 text-2xl"
               >
                 ×
               </button>
             </div>
 
+            {/* Modal İçi Hata Mesajı */}
+            {message.text && message.type === 'error' && (
+              <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg">
+                <p className="text-sm text-red-800">{message.text}</p>
+              </div>
+            )}
+
             <form onSubmit={handleAddUser} className="space-y-4">
+              {/* Şifre Uyarısı */}
+              <div className="bg-yellow-50 border-l-4 border-yellow-400 p-4">
+                <div className="flex">
+                  <div className="flex-shrink-0">
+                    <span className="text-yellow-400 text-xl">⚠️</span>
+                  </div>
+                  <div className="ml-3">
+                    <p className="text-sm text-yellow-700">
+                      <strong>Önemli:</strong> Kullanıcı şifresini not edin! Şifre bir daha görüntülenemez.
+                    </p>
+                  </div>
+                </div>
+              </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   Email *
@@ -401,6 +489,144 @@ export default function UserManagementClient({ users }: { users: User[] }) {
           </div>
         </div>
       )}
+
+
+{/* Kullanıcı Düzenleme Modal */}
+{showEditModal && editingUser && (
+  <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+    <div className="bg-white rounded-lg max-w-md w-full p-6">
+      <div className="flex justify-between items-center mb-6">
+        <h2 className="text-2xl font-bold text-gray-900">Kullanıcı Düzenle</h2>
+        <button
+          onClick={() => {
+            setShowEditModal(false)
+            setEditingUser(null)
+            setMessage({ type: '', text: '' })
+          }}
+          className="text-gray-400 hover:text-gray-600 text-2xl"
+        >
+          ×
+        </button>
+      </div>
+
+      {/* Modal İçi Hata Mesajı */}
+      {message.text && message.type === 'error' && (
+        <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg">
+          <p className="text-sm text-red-800">{message.text}</p>
+        </div>
+      )}
+
+      <form onSubmit={handleUpdateUser} className="space-y-4">
+        {/* Kullanıcı ID Göster */}
+        <div className="bg-gray-50 p-3 rounded-lg">
+          <p className="text-xs text-gray-500">Kullanıcı ID</p>
+          <p className="text-sm font-mono text-gray-700">{editingUser.id.slice(0, 16)}...</p>
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">
+            Email
+          </label>
+          <input
+            type="email"
+            value={editFormData.email}
+            onChange={(e) => setEditFormData({ ...editFormData, email: e.target.value })}
+            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            placeholder="ornek@email.com"
+            required
+          />
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">
+            Yeni Şifre <span className="text-gray-400 font-normal">(opsiyonel)</span>
+          </label>
+          <input
+            type="password"
+            value={editFormData.password}
+            onChange={(e) => setEditFormData({ ...editFormData, password: e.target.value })}
+            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            placeholder="Boş bırakılırsa değişmez"
+            minLength={6}
+          />
+          <p className="mt-1 text-xs text-gray-500">
+            Şifre değiştirmek istemiyorsanız boş bırakın
+          </p>
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">
+            Ad Soyad *
+          </label>
+          <input
+            type="text"
+            value={editFormData.full_name}
+            onChange={(e) => setEditFormData({ ...editFormData, full_name: e.target.value })}
+            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            placeholder="Ahmet Yılmaz"
+            required
+          />
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">
+            Telefon
+          </label>
+          <input
+            type="tel"
+            value={editFormData.phone}
+            onChange={(e) => setEditFormData({ ...editFormData, phone: e.target.value })}
+            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            placeholder="05XX XXX XX XX"
+          />
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">
+            Rol *
+          </label>
+          <select
+            value={editFormData.role}
+            onChange={(e) => setEditFormData({ ...editFormData, role: e.target.value })}
+            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            required
+          >
+            {ROLES.map(role => (
+              <option key={role.value} value={role.value}>
+                {role.label}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        <div className="flex gap-3 pt-4">
+          <button
+            type="button"
+            onClick={() => {
+              setShowEditModal(false)
+              setEditingUser(null)
+            }}
+            className="flex-1 px-4 py-2 border border-gray-300 rounded-lg font-medium text-gray-700 hover:bg-gray-50 transition-colors"
+          >
+            İptal
+          </button>
+          <button
+            type="submit"
+            disabled={loading}
+            className="flex-1 bg-blue-600 text-white px-4 py-2 rounded-lg font-medium hover:bg-blue-700 disabled:bg-blue-300 disabled:cursor-not-allowed transition-colors"
+          >
+            {loading ? 'Güncelleniyor...' : 'Güncelle'}
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+)}
+
+
+
+
+
     </div>
   )
 }
