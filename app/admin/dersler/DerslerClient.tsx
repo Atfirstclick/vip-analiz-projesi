@@ -36,6 +36,8 @@ export default function DerslerClient({ subjects }: { subjects: Subject[] }) {
   const [showEditModal, setShowEditModal] = useState(false)
   const [editingSubject, setEditingSubject] = useState<Subject | null>(null)
   const [loading, setLoading] = useState(false)
+  const [searchTeacher, setSearchTeacher] = useState('')
+  const [showTeacherDropdown, setShowTeacherDropdown] = useState(false)
 
   const [formData, setFormData] = useState({
     name: '',
@@ -60,68 +62,95 @@ export default function DerslerClient({ subjects }: { subjects: Subject[] }) {
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
   )
 
-  // Öğretmenleri yükle
   useEffect(() => {
     loadTeachers()
     loadTeacherSubjects()
   }, [])
 
   async function loadTeachers() {
-    const { data } = await supabase
+    console.log('🔍 loadTeachers çalışıyor...')
+    
+    const { data: teachersData, error: teachersError } = await supabase
       .from('teachers')
-      .select(`
-        id,
-        user_id,
-        is_verified,
-        profiles:user_id (
-          full_name
-        )
-      `)
+      .select('id, user_id, is_verified, is_active')
       .eq('is_active', true)
+      .eq('is_verified', true)
 
-    if (data) {
-      const formattedTeachers = data.map((t: any) => ({
-        id: t.id,
-        user_id: t.user_id,
-        full_name: t.profiles?.full_name || 'İsimsiz',
-        is_verified: t.is_verified
-      }))
-      setTeachers(formattedTeachers)
+    console.log('📊 Teachers data:', teachersData)
+
+    if (teachersData && teachersData.length > 0) {
+      const userIds = teachersData.map(t => t.user_id)
+      
+      const { data: profilesData } = await supabase
+        .from('profiles')
+        .select('id, full_name')
+        .in('id', userIds)
+
+      if (profilesData) {
+        const formattedTeachers = teachersData.map((teacher) => {
+          const profile = profilesData.find(p => p.id === teacher.user_id)
+          return {
+            id: teacher.id,
+            user_id: teacher.user_id,
+            full_name: profile?.full_name || 'İsimsiz',
+            is_verified: teacher.is_verified
+          }
+        })
+        
+        console.log('✅ Formatted teachers:', formattedTeachers)
+        setTeachers(formattedTeachers)
+      }
     }
   }
 
   async function loadTeacherSubjects() {
-    const { data } = await supabase
+    console.log('🔍 loadTeacherSubjects çalışıyor...')
+    
+    const { data: tsData, error } = await supabase
       .from('teacher_subjects')
-      .select(`
-        teacher_id,
-        subject_id,
-        teachers:teacher_id (
-          user_id,
-          profiles:user_id (
-            full_name
-          )
-        )
-      `)
+      .select('teacher_id, subject_id')
 
-    if (data) {
-      const grouped: Record<string, TeacherSubject[]> = {}
+    console.log('📚 Teacher-Subject data:', tsData)
+    console.log('❌ Teacher-Subject error:', error)
+
+    if (tsData && tsData.length > 0) {
+      // Tüm teacher_id'leri topla
+      const teacherIds = [...new Set(tsData.map(ts => ts.teacher_id))]
       
-      data.forEach((ts: any) => {
-        const subjectId = ts.subject_id
-        const teacherName = ts.teachers?.profiles?.full_name || 'İsimsiz'
+      // Teachers ve profiles'ı al
+      const { data: teachersData } = await supabase
+        .from('teachers')
+        .select('id, user_id')
+        .in('id', teacherIds)
+
+      if (teachersData) {
+        const userIds = teachersData.map(t => t.user_id)
         
-        if (!grouped[subjectId]) {
-          grouped[subjectId] = []
-        }
+        const { data: profilesData } = await supabase
+          .from('profiles')
+          .select('id, full_name')
+          .in('id', userIds)
+
+        // Subject'lere göre grupla
+        const grouped: Record<string, TeacherSubject[]> = {}
         
-        grouped[subjectId].push({
-          teacher_id: ts.teacher_id,
-          teacher_name: teacherName
+        tsData.forEach((ts) => {
+          const teacher = teachersData.find(t => t.id === ts.teacher_id)
+          const profile = profilesData?.find(p => p.id === teacher?.user_id)
+          
+          if (!grouped[ts.subject_id]) {
+            grouped[ts.subject_id] = []
+          }
+          
+          grouped[ts.subject_id].push({
+            teacher_id: ts.teacher_id,
+            teacher_name: profile?.full_name || 'İsimsiz'
+          })
         })
-      })
-      
-      setTeacherSubjects(grouped)
+        
+        console.log('✅ Grouped teacher subjects:', grouped)
+        setTeacherSubjects(grouped)
+      }
     }
   }
 
@@ -203,9 +232,9 @@ export default function DerslerClient({ subjects }: { subjects: Subject[] }) {
       display_order: subject.display_order
     })
 
-    // Bu derse atanan öğretmenleri yükle
     const assignedTeachers = teacherSubjects[subject.id]?.map(ts => ts.teacher_id) || []
     setSelectedTeachers(assignedTeachers)
+    setSearchTeacher('')
 
     setShowEditModal(true)
     setMessage({ type: '', text: '' })
@@ -315,6 +344,15 @@ export default function DerslerClient({ subjects }: { subjects: Subject[] }) {
       }
     })
   }
+
+  function removeTeacher(teacherId: string) {
+    setSelectedTeachers(prev => prev.filter(id => id !== teacherId))
+  }
+
+  const filteredTeachers = teachers.filter(t => 
+    t.full_name.toLowerCase().includes(searchTeacher.toLowerCase()) &&
+    !selectedTeachers.includes(t.id)
+  )
 
   function formatDate(dateString: string) {
     const date = new Date(dateString)
@@ -473,7 +511,6 @@ export default function DerslerClient({ subjects }: { subjects: Subject[] }) {
           </div>
         )}
       </div>
-
       {/* Yeni Ders Modal */}
       {showAddModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
@@ -590,7 +627,7 @@ export default function DerslerClient({ subjects }: { subjects: Subject[] }) {
         </div>
       )}
 
-      {/* Ders Düzenleme Modal (Öğretmen Atama ile) */}
+      {/* Ders Düzenleme Modal (Searchable Multi-Select ile) */}
       {showEditModal && editingSubject && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-lg max-w-lg w-full p-6 max-h-[90vh] overflow-y-auto">
@@ -601,6 +638,7 @@ export default function DerslerClient({ subjects }: { subjects: Subject[] }) {
                   setShowEditModal(false)
                   setEditingSubject(null)
                   setSelectedTeachers([])
+                  setSearchTeacher('')
                   setMessage({ type: '', text: '' })
                 }}
                 className="text-gray-400 hover:text-gray-600 text-2xl"
@@ -683,40 +721,81 @@ export default function DerslerClient({ subjects }: { subjects: Subject[] }) {
                 </label>
               </div>
 
-              {/* Öğretmen Atama Bölümü */}
+              {/* Öğretmen Atama - Searchable Multi-Select */}
               <div className="border-t pt-4 mt-4">
                 <label className="block text-sm font-medium text-gray-700 mb-3">
-                  ✨ Öğretmen Atama ({selectedTeachers.length} seçili)
+                  ✨ Öğretmen Atama
                 </label>
                 
-                <div className="space-y-2 max-h-60 overflow-y-auto border border-gray-200 rounded-lg p-3">
-                  {teachers.length === 0 ? (
-                    <p className="text-sm text-gray-500 text-center py-4">
-                      Henüz onaylanmış öğretmen yok
-                    </p>
-                  ) : (
-                    teachers.map((teacher) => (
-                      <label
-                        key={teacher.id}
-                        className="flex items-center p-2 hover:bg-gray-50 rounded cursor-pointer"
-                      >
-                        <input
-                          type="checkbox"
-                          checked={selectedTeachers.includes(teacher.id)}
-                          onChange={() => toggleTeacherSelection(teacher.id)}
-                          className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-                        />
-                        <span className="ml-3 text-sm text-gray-700">
-                          👨‍🏫 {teacher.full_name}
+                {/* Seçili Öğretmenler */}
+                {selectedTeachers.length > 0 && (
+                  <div className="mb-3 flex flex-wrap gap-2">
+                    {selectedTeachers.map(teacherId => {
+                      const teacher = teachers.find(t => t.id === teacherId)
+                      return (
+                        <span
+                          key={teacherId}
+                          className="inline-flex items-center px-3 py-1 rounded-full text-sm bg-blue-100 text-blue-800"
+                        >
+                          👨‍🏫 {teacher?.full_name}
+                          <button
+                            type="button"
+                            onClick={() => removeTeacher(teacherId)}
+                            className="ml-2 text-blue-600 hover:text-blue-800 font-bold"
+                          >
+                            ×
+                          </button>
                         </span>
-                      </label>
-                    ))
+                      )
+                    })}
+                  </div>
+                )}
+
+                {/* Search Input */}
+                <div className="relative">
+                  <input
+                    type="text"
+                    value={searchTeacher}
+                    onChange={(e) => {
+                      setSearchTeacher(e.target.value)
+                      setShowTeacherDropdown(true)
+                    }}
+                    onFocus={() => setShowTeacherDropdown(true)}
+                    placeholder="Öğretmen ara ve ekle..."
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  />
+
+                  {/* Dropdown */}
+                  {showTeacherDropdown && filteredTeachers.length > 0 && (
+                    <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-60 overflow-y-auto">
+                      {filteredTeachers.map((teacher) => (
+                        <button
+                          key={teacher.id}
+                          type="button"
+                          onClick={() => {
+                            toggleTeacherSelection(teacher.id)
+                            setSearchTeacher('')
+                            setShowTeacherDropdown(false)
+                          }}
+                          className="w-full text-left px-4 py-2 hover:bg-blue-50 flex items-center text-sm"
+                        >
+                          <span className="mr-2">👨‍🏫</span>
+                          <span>{teacher.full_name}</span>
+                        </button>
+                      ))}
+                    </div>
                   )}
                 </div>
-                
+
+                {teachers.length === 0 && (
+                  <p className="mt-2 text-sm text-gray-500">
+                    Henüz onaylanmış öğretmen yok
+                  </p>
+                )}
+
                 {selectedTeachers.length > 0 && (
                   <p className="mt-2 text-xs text-green-600">
-                    ✓ {selectedTeachers.length} öğretmen bu derse atanacak
+                    ✓ {selectedTeachers.length} öğretmen seçildi
                   </p>
                 )}
               </div>
