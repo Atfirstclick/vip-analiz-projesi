@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { createBrowserClient } from '@supabase/ssr'
+import Link from 'next/link'
 
 interface Teacher {
   id: string
@@ -353,19 +354,25 @@ export default function OgretmenlerClient({ teachers }: { teachers: Teacher[] })
                     {formatDate(teacher.created_at)}
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-right text-sm">
-                    <button
-                    onClick={() => openEditModal(teacher)}
-                    className="text-blue-600 hover:text-blue-900 font-medium mr-4"
-                    >
-                    Düzenle
-                    </button>
-                    <button
-                    onClick={() => handleDeleteTeacher(teacher.id, teacher.full_name)}
-                    className="text-red-600 hover:text-red-900 font-medium"
-                    >
-                    Sil
-                    </button>
-                </td>
+  <Link
+    href={`/admin/ogretmenler/${teacher.id}/takvim`}
+    className="text-purple-600 hover:text-purple-900 font-medium mr-4"
+  >
+    📅 Takvim
+  </Link>
+  <button
+    onClick={() => openEditModal(teacher)}
+    className="text-blue-600 hover:text-blue-900 font-medium mr-4"
+  >
+    Düzenle
+  </button>
+  <button
+    onClick={() => handleDeleteTeacher(teacher.id, teacher.full_name)}
+    className="text-red-600 hover:text-red-900 font-medium"
+  >
+    Sil
+  </button>
+</td>
                 </tr>
             ))}
             </tbody>
