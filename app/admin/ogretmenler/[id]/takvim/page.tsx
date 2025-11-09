@@ -11,22 +11,12 @@ interface PageProps {
 
 export default async function AdminOgretmenTakvimPage({ params }: PageProps) {
   const supabase = await createClient()
-  
-  // params'ı await ile aç
   const { id: teacherId } = await params
 
-  // Öğretmen bilgilerini al
+  // 1. Teacher bilgisini al
   const { data: teacher, error: teacherError } = await supabase
     .from('teachers')
-    .select(`
-      id,
-      bio,
-      experience_years,
-      profiles:user_id (
-        full_name,
-        email
-      )
-    `)
+    .select('id, user_id, bio, experience_years')
     .eq('id', teacherId)
     .single()
 
@@ -34,7 +24,16 @@ export default async function AdminOgretmenTakvimPage({ params }: PageProps) {
     notFound()
   }
 
-  // Öğretmenin müsaitliklerini al
+  // 2. Profile bilgisini ayrı query ile al
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('full_name, email')
+    .eq('id', teacher.user_id)
+    .single()
+
+  const teacherName = profile?.full_name || 'Öğretmen'
+
+  // 3. Müsaitleri al
   const { data: availabilities, error: availError } = await supabase
     .from('availabilities')
     .select('*')
@@ -50,10 +49,6 @@ export default async function AdminOgretmenTakvimPage({ params }: PageProps) {
       </div>
     )
   }
-
-  // Type casting for nested profile
-  const teacherData = teacher as any
-  const teacherName = teacherData?.profiles?.full_name || 'Öğretmen'
 
   return (
     <div>
