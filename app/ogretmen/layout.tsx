@@ -103,6 +103,12 @@ export default async function OgretmenLayout({
                   📅 Takvim
                 </Link>
                 <Link
+                  href="/ogretmen/randevularim"
+                  className="border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700 inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium"
+                >
+                  📋 Randevularım
+                </Link>
+                <Link
                   href="/ogretmen/profil"
                   className="border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700 inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium"
                 >

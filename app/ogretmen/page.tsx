@@ -12,6 +12,7 @@ interface Teacher {
   id: string
   bio: string | null
   experience_years: number | null
+  created_at: string
   profiles: Profile
 }
 
@@ -31,6 +32,7 @@ export default async function OgretmenDashboard() {
       id,
       bio,
       experience_years,
+      created_at,
       profiles:user_id (
         full_name,
         email,
@@ -46,15 +48,10 @@ export default async function OgretmenDashboard() {
   // Atanan dersler
   const { data: teacherSubjects } = await supabase
     .from('teacher_subjects')
-    .select(`
-      subjects:subject_id (
-        name,
-        icon
-      )
-    `)
+    .select('subject_id')
     .eq('teacher_id', teacher?.id)
 
-  const subjects = teacherSubjects?.map(ts => ts.subjects).filter(Boolean) || []
+  const subjectCount = teacherSubjects?.length || 0
 
   // Müsaitlik sayısı
   const { count: availabilityCount } = await supabase
@@ -63,8 +60,15 @@ export default async function OgretmenDashboard() {
     .eq('teacher_id', teacher?.id)
     .eq('is_active', true)
 
-  // Yaklaşan randevular (FAZ 3.3'ten sonra aktif olacak)
-  const upcomingAppointments = 0
+  // Yaklaşan randevular
+  const today = new Date().toISOString().split('T')[0]
+  
+  const { count: upcomingAppointments } = await supabase
+    .from('appointments')
+    .select('*', { count: 'exact', head: true })
+    .eq('teacher_id', teacher?.id || '')
+    .gte('appointment_date', today)
+    .eq('status', 'scheduled')
 
   return (
     <div>
@@ -89,7 +93,7 @@ export default async function OgretmenDashboard() {
                     Verdiğiniz Dersler
                   </dt>
                   <dd className="text-3xl font-semibold text-gray-900">
-                    {subjects.length}
+                    {subjectCount}
                   </dd>
                 </dl>
               </div>
@@ -121,7 +125,7 @@ export default async function OgretmenDashboard() {
           <div className="p-5">
             <div className="flex items-center">
               <div className="shrink-0">
-                <span className="text-4xl">🕐</span>
+                <span className="text-4xl">⏰</span>
               </div>
               <div className="ml-5 w-0 flex-1">
                 <dl>
@@ -129,7 +133,7 @@ export default async function OgretmenDashboard() {
                     Yaklaşan Randevular
                   </dt>
                   <dd className="text-3xl font-semibold text-gray-900">
-                    {upcomingAppointments}
+                    {upcomingAppointments || 0}
                   </dd>
                 </dl>
               </div>
@@ -141,7 +145,7 @@ export default async function OgretmenDashboard() {
           <div className="p-5">
             <div className="flex items-center">
               <div className="shrink-0">
-                <span className="text-4xl">⏰</span>
+                <span className="text-4xl">⏱️</span>
               </div>
               <div className="ml-5 w-0 flex-1">
                 <dl>
@@ -156,27 +160,6 @@ export default async function OgretmenDashboard() {
             </div>
           </div>
         </div>
-      </div>
-
-      {/* Atanan Dersler */}
-      <div className="bg-white shadow rounded-lg p-6 mb-8">
-        <h2 className="text-lg font-semibold text-gray-900 mb-4">
-          Verdiğiniz Dersler
-        </h2>
-        {subjects.length > 0 ? (
-          <div className="flex flex-wrap gap-2">
-            {subjects.map((subject: any, index: number) => (
-              <span
-                key={index}
-                className="inline-flex items-center px-3 py-2 rounded-full text-sm bg-purple-100 text-purple-800"
-              >
-                {subject.icon} {subject.name}
-              </span>
-            ))}
-          </div>
-        ) : (
-          <p className="text-gray-500">Henüz ders atanmamış. Yönetici ile iletişime geçin.</p>
-        )}
       </div>
 
       {/* Hızlı Erişim */}
@@ -208,14 +191,17 @@ export default async function OgretmenDashboard() {
             </p>
           </Link>
 
-          <div className="bg-gray-50 p-6 rounded-lg shadow-sm border-l-4 border-gray-300 opacity-60 cursor-not-allowed">
+          <Link
+            href="/ogretmen/randevularim"
+            className="bg-white p-6 rounded-lg shadow-sm hover:shadow-md transition-shadow border-l-4 border-purple-500"
+          >
             <h3 className="text-lg font-semibold text-gray-900 mb-2">
               📋 Randevularım
             </h3>
             <p className="text-sm text-gray-600">
-              Yakında... (FAZ 3.3)
+              Öğrencilerinizle olan randevularınızı görüntüleyin
             </p>
-          </div>
+          </Link>
 
         </div>
       </div>
