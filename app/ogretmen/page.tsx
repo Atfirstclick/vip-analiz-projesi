@@ -1,20 +1,6 @@
 import { getCurrentUser, createClient } from '@/lib/supabase/server'
 import Link from 'next/link'
-
-// Type tanımlamaları
-interface Profile {
-  full_name: string
-  email: string
-  phone: string | null
-}
-
-interface Teacher {
-  id: string
-  bio: string | null
-  experience_years: number | null
-  created_at: string
-  profiles: Profile
-}
+import TeacherWeekCalendar from '@/components/TeacherWeekCalendar'
 
 export default async function OgretmenDashboard() {
   const user = await getCurrentUser()
@@ -28,138 +14,93 @@ export default async function OgretmenDashboard() {
   // Öğretmen bilgilerini al
   const { data: teacher } = await supabase
     .from('teachers')
-    .select(`
-      id,
-      bio,
-      experience_years,
-      created_at,
-      profiles:user_id (
-        full_name,
-        email,
-        phone
-      )
-    `)
+    .select('id, user_id')
     .eq('user_id', user.id)
     .single()
 
-  // Type casting
-  const teacherData = teacher as unknown as Teacher
+  if (!teacher) {
+    return <div>Öğretmen kaydı bulunamadı</div>
+  }
 
-  // Atanan dersler
-  const { data: teacherSubjects } = await supabase
-    .from('teacher_subjects')
-    .select('subject_id')
-    .eq('teacher_id', teacher?.id)
+  // Profile bilgisi
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('full_name')
+    .eq('id', user.id)
+    .single()
 
-  const subjectCount = teacherSubjects?.length || 0
-
-  // Müsaitlik sayısı
-  const { count: availabilityCount } = await supabase
+  // Müsaitleri çek
+  const { data: availabilities } = await supabase
     .from('availabilities')
-    .select('*', { count: 'exact', head: true })
-    .eq('teacher_id', teacher?.id)
+    .select('id, day_of_week, start_time, end_time, is_recurring, specific_date, is_active')
+    .eq('teacher_id', teacher.id)
     .eq('is_active', true)
 
-  // Yaklaşan randevular
-  const today = new Date().toISOString().split('T')[0]
-  
-  const { count: upcomingAppointments } = await supabase
+  // Randevuları çek
+  const { data: rawAppointments } = await supabase
     .from('appointments')
-    .select('*', { count: 'exact', head: true })
-    .eq('teacher_id', teacher?.id || '')
-    .gte('appointment_date', today)
-    .eq('status', 'scheduled')
+    .select(`
+      id,
+      appointment_date,
+      start_time,
+      end_time,
+      status,
+      subject_id,
+      student_id
+    `)
+    .eq('teacher_id', teacher.id)
+    .in('status', ['scheduled', 'confirmed'])
+
+  // Subject ve Student bilgilerini ayrı çek
+  const subjectIds = [...new Set(rawAppointments?.map(a => a.subject_id) || [])]
+  const studentIds = [...new Set(rawAppointments?.map(a => a.student_id) || [])]
+
+  const { data: subjects } = await supabase
+    .from('subjects')
+    .select('id, name')
+    .in('id', subjectIds)
+
+  const { data: students } = await supabase
+    .from('profiles')
+    .select('id, full_name')
+    .in('id', studentIds)
+
+  // Randevuları birleştir
+  const appointments = rawAppointments?.map(apt => {
+    const subject = subjects?.find(s => s.id === apt.subject_id)
+    const student = students?.find(s => s.id === apt.student_id)
+
+    return {
+      id: apt.id,
+      appointment_date: apt.appointment_date,
+      start_time: apt.start_time,
+      end_time: apt.end_time,
+      status: apt.status,
+      subject: {
+        name: subject?.name || 'Bilinmeyen Ders'
+      },
+      student: {
+        full_name: student?.full_name || 'Bilinmeyen Öğrenci'
+      }
+    }
+  }) || []
 
   return (
     <div>
       <div className="mb-8">
         <h1 className="text-3xl font-bold text-gray-900">Dashboard</h1>
         <p className="mt-2 text-gray-600">
-          Hoş geldiniz, <span className="font-semibold">{teacherData?.profiles?.full_name}</span>
+          Hoş geldiniz, <span className="font-semibold">{profile?.full_name}</span>
         </p>
       </div>
 
-      {/* İstatistikler */}
-      <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4 mb-8">
-        <div className="bg-white overflow-hidden shadow rounded-lg">
-          <div className="p-5">
-            <div className="flex items-center">
-              <div className="shrink-0">
-                <span className="text-4xl">📚</span>
-              </div>
-              <div className="ml-5 w-0 flex-1">
-                <dl>
-                  <dt className="text-sm font-medium text-gray-500 truncate">
-                    Verdiğiniz Dersler
-                  </dt>
-                  <dd className="text-3xl font-semibold text-gray-900">
-                    {subjectCount}
-                  </dd>
-                </dl>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div className="bg-white overflow-hidden shadow rounded-lg">
-          <div className="p-5">
-            <div className="flex items-center">
-              <div className="shrink-0">
-                <span className="text-4xl">📅</span>
-              </div>
-              <div className="ml-5 w-0 flex-1">
-                <dl>
-                  <dt className="text-sm font-medium text-gray-500 truncate">
-                    Müsait Zaman Dilimleri
-                  </dt>
-                  <dd className="text-3xl font-semibold text-gray-900">
-                    {availabilityCount || 0}
-                  </dd>
-                </dl>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div className="bg-white overflow-hidden shadow rounded-lg">
-          <div className="p-5">
-            <div className="flex items-center">
-              <div className="shrink-0">
-                <span className="text-4xl">⏰</span>
-              </div>
-              <div className="ml-5 w-0 flex-1">
-                <dl>
-                  <dt className="text-sm font-medium text-gray-500 truncate">
-                    Yaklaşan Randevular
-                  </dt>
-                  <dd className="text-3xl font-semibold text-gray-900">
-                    {upcomingAppointments || 0}
-                  </dd>
-                </dl>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div className="bg-white overflow-hidden shadow rounded-lg">
-          <div className="p-5">
-            <div className="flex items-center">
-              <div className="shrink-0">
-                <span className="text-4xl">⏱️</span>
-              </div>
-              <div className="ml-5 w-0 flex-1">
-                <dl>
-                  <dt className="text-sm font-medium text-gray-500 truncate">
-                    Deneyim
-                  </dt>
-                  <dd className="text-3xl font-semibold text-gray-900">
-                    {teacher?.experience_years || 0} yıl
-                  </dd>
-                </dl>
-              </div>
-            </div>
-          </div>
-        </div>
+      {/* Ana Takvim */}
+      <div className="mb-8">
+        <TeacherWeekCalendar 
+          teacherId={teacher.id}
+          availabilities={availabilities || []}
+          appointments={appointments}
+        />
       </div>
 
       {/* Hızlı Erişim */}
