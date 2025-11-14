@@ -6,12 +6,54 @@ import WeeklyCalendar from '@/components/takvim/WeeklyCalendar'
 import AvailabilityModal, { AvailabilityFormData } from '@/components/takvim/AvailabilityModal'
 import { Availability } from '@/components/takvim/types'
 
+interface Appointment {
+  id: string
+  date: string
+  start_time: string
+  end_time: string
+  status: string
+  student: {
+    id: string
+    full_name: string
+  }
+  subject: {
+    id: string
+    name: string
+    icon: string
+  }
+}
+
+interface ClassSchedule {
+  id: string
+  day_of_week: number
+  start_time: string
+  end_time: string
+  classroom: string | null
+  class: {
+    id: string
+    name: string
+    grade: string
+  }
+  subject: {
+    id: string
+    name: string
+    icon: string
+  }
+}
+
 interface TakvimClientProps {
   teacherId: string
   initialAvailabilities: Availability[]
+  appointments: Appointment[]
+  classSchedule: ClassSchedule[]
 }
 
-export default function TakvimClient({ teacherId, initialAvailabilities }: TakvimClientProps) {
+export default function TakvimClient({ 
+  teacherId, 
+  initialAvailabilities,
+  appointments,
+  classSchedule
+}: TakvimClientProps) {
   const [availabilities, setAvailabilities] = useState<Availability[]>(initialAvailabilities)
   const [showModal, setShowModal] = useState(false)
   const [editingAvailability, setEditingAvailability] = useState<Availability | null>(null)
@@ -25,7 +67,6 @@ export default function TakvimClient({ teacherId, initialAvailabilities }: Takvi
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
   )
 
-  // Verileri yenile
   async function refreshAvailabilities() {
     const { data } = await supabase
       .from('availabilities')
@@ -40,7 +81,6 @@ export default function TakvimClient({ teacherId, initialAvailabilities }: Takvi
     }
   }
 
-  // Boş slot'a tıklandı - Yeni müsaitlik ekle
   function handleSlotClick(day: number, hour: number) {
     setEditingAvailability(null)
     setPreselectedDay(day)
@@ -49,7 +89,6 @@ export default function TakvimClient({ teacherId, initialAvailabilities }: Takvi
     setMessage({ type: '', text: '' })
   }
 
-  // Mevcut müsaitliğe tıklandı - Düzenle
   function handleAvailabilityClick(availability: Availability) {
     setEditingAvailability(availability)
     setPreselectedDay(undefined)
@@ -58,22 +97,19 @@ export default function TakvimClient({ teacherId, initialAvailabilities }: Takvi
     setMessage({ type: '', text: '' })
   }
 
-  // Yeni müsaitlik ekle butonu
   function handleAddNew() {
     setEditingAvailability(null)
-    setPreselectedDay(1) // Pazartesi
-    setPreselectedHour(9) // 09:00
+    setPreselectedDay(1)
+    setPreselectedHour(9)
     setShowModal(true)
     setMessage({ type: '', text: '' })
   }
 
-  // Kaydet (Ekle veya Güncelle)
   async function handleSave(formData: AvailabilityFormData) {
     setLoading(true)
 
     try {
       if (editingAvailability) {
-        // Güncelle
         const { error } = await supabase
           .from('availabilities')
           .update({
@@ -87,10 +123,8 @@ export default function TakvimClient({ teacherId, initialAvailabilities }: Takvi
           .eq('id', editingAvailability.id)
 
         if (error) throw error
-
         setMessage({ type: 'success', text: '✓ Müsaitlik güncellendi!' })
       } else {
-        // Yeni ekle
         const { error } = await supabase
           .from('availabilities')
           .insert({
@@ -104,7 +138,6 @@ export default function TakvimClient({ teacherId, initialAvailabilities }: Takvi
           })
 
         if (error) throw error
-
         setMessage({ type: 'success', text: '✓ Müsaitlik eklendi!' })
       }
 
@@ -118,7 +151,6 @@ export default function TakvimClient({ teacherId, initialAvailabilities }: Takvi
     }
   }
 
-  // Sil
   async function handleDelete(id: string) {
     setLoading(true)
 
@@ -143,7 +175,6 @@ export default function TakvimClient({ teacherId, initialAvailabilities }: Takvi
 
   return (
     <div>
-      {/* Başlık ve Buton */}
       <div className="flex justify-between items-center mb-6">
         <div>
           <h1 className="text-3xl font-bold text-gray-900">Takvim Yönetimi</h1>
@@ -160,7 +191,6 @@ export default function TakvimClient({ teacherId, initialAvailabilities }: Takvi
         </button>
       </div>
 
-      {/* Mesaj */}
       {message.text && (
         <div className={`mb-6 p-4 rounded-lg ${
           message.type === 'success' 
@@ -171,7 +201,6 @@ export default function TakvimClient({ teacherId, initialAvailabilities }: Takvi
         </div>
       )}
 
-      {/* İstatistik */}
       <div className="mb-6 grid grid-cols-1 sm:grid-cols-3 gap-4">
         <div className="bg-white p-4 rounded-lg shadow-sm border-l-4 border-blue-500">
           <div className="text-sm text-gray-600">Toplam Müsaitlik</div>
@@ -195,14 +224,15 @@ export default function TakvimClient({ teacherId, initialAvailabilities }: Takvi
         </div>
       </div>
 
-      {/* Takvim */}
+      {/* 🆕 WeeklyCalendar'a appointments ve classSchedule geç */}
       <WeeklyCalendar
         availabilities={availabilities}
+        appointments={appointments}
+        classSchedule={classSchedule}
         onSlotClick={handleSlotClick}
         onAvailabilityClick={handleAvailabilityClick}
       />
 
-      {/* Modal */}
       <AvailabilityModal
         isOpen={showModal}
         onClose={() => {

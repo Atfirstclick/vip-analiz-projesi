@@ -1,232 +1,273 @@
 'use client'
 
 import { useState } from 'react'
-import { Availability, WeekSchedule, DAY_NAMES, WORK_HOURS } from './types'
+import { Availability } from './types'
+
+interface Appointment {
+  id: string
+  date: string
+  start_time: string
+  end_time: string
+  status: string
+  student: { id: string; full_name: string }
+  subject: { id: string; name: string; icon: string }
+}
+
+interface ClassSchedule {
+  id: string
+  day_of_week: number
+  start_time: string
+  end_time: string
+  classroom: string | null
+  class: { id: string; name: string; grade: string }
+  subject: { id: string; name: string; icon: string }
+}
 
 interface WeeklyCalendarProps {
   availabilities: Availability[]
-  onSlotClick: (day: number, hour: number) => void
-  onAvailabilityClick: (availability: Availability) => void
+  appointments?: Appointment[]
+  classSchedule?: ClassSchedule[]
+  readOnly?: boolean
+  onSlotClick?: (day: number, hour: number) => void
+  onAvailabilityClick?: (availability: Availability) => void
 }
 
-export default function WeeklyCalendar({
-  availabilities,
-  onSlotClick,
-  onAvailabilityClick
+const DAYS = [
+  { value: 1, label: 'Pazartesi' },
+  { value: 2, label: 'Salı' },
+  { value: 3, label: 'Çarşamba' },
+  { value: 4, label: 'Perşembe' },
+  { value: 5, label: 'Cuma' },
+  { value: 6, label: 'Cumartesi' },
+  { value: 7, label: 'Pazar' }
+]
+
+const HOURS = Array.from({ length: 13 }, (_, i) => i + 8) // 8-20
+
+export default function WeeklyCalendar({ 
+  availabilities, 
+  appointments = [],
+  classSchedule = [],
+  readOnly = false,
+  onSlotClick, 
+  onAvailabilityClick 
 }: WeeklyCalendarProps) {
-  const [viewMode, setViewMode] = useState<'grid' | 'list'>('list')
   
-  // Availabilities'i grid formatına dönüştür
-  function buildWeekSchedule(): WeekSchedule {
-    const schedule: WeekSchedule = {
-      0: {}, 1: {}, 2: {}, 3: {}, 4: {}, 5: {}, 6: {}
-    }
+  const [currentWeekOffset, setCurrentWeekOffset] = useState(0)
 
-    availabilities.forEach(avail => {
-      const startHour = parseInt(avail.start_time.split(':')[0])
-      const endHour = parseInt(avail.end_time.split(':')[0])
+  function getWeekStartDate() {
+    const today = new Date()
+    const dayOfWeek = today.getDay() === 0 ? 7 : today.getDay()
+    const monday = new Date(today)
+    monday.setDate(today.getDate() - dayOfWeek + 1 + (currentWeekOffset * 7))
+    return monday
+  }
 
-      for (let hour = startHour; hour < endHour; hour++) {
-        if (WORK_HOURS.includes(hour)) {
-          schedule[avail.day_of_week][hour] = {
-            hour,
-            available: true,
-            availabilityId: avail.id,
-            notes: avail.notes || undefined
+  function getWeekDates() {
+    const monday = getWeekStartDate()
+    return DAYS.map((day, index) => {
+      const date = new Date(monday)
+      date.setDate(monday.getDate() + index)
+      return {
+        ...day,
+        date: date,
+        dateStr: date.toISOString().split('T')[0],
+        dayNumber: date.getDate(),
+        monthName: date.toLocaleDateString('tr-TR', { month: 'short' })
+      }
+    })
+  }
+
+  const weekDates = getWeekDates()
+  const weekStart = getWeekStartDate()
+  const weekEnd = new Date(weekStart)
+  weekEnd.setDate(weekStart.getDate() + 6)
+
+  function getAvailabilityForSlot(day: number, hour: number): Availability | null {
+    return availabilities.find(a => {
+      const startHour = parseInt(a.start_time.split(':')[0])
+      const endHour = parseInt(a.end_time.split(':')[0])
+      return a.day_of_week === day && hour >= startHour && hour < endHour
+    }) || null
+  }
+
+  function getAppointmentsForSlot(dateStr: string, hour: number): Appointment[] {
+    return appointments.filter(apt => {
+      if (apt.date !== dateStr) return false
+      const aptHour = parseInt(apt.start_time.split(':')[0])
+      return aptHour === hour
+    })
+  }
+
+  function getClassScheduleForSlot(day: number, hour: number): ClassSchedule[] {
+    return classSchedule.filter(cs => {
+      if (cs.day_of_week !== day) return false
+      const startHour = parseInt(cs.start_time.substring(0, 2))
+      const endHour = parseInt(cs.end_time.substring(0, 2))
+      return hour >= startHour && hour < endHour
+    })
+  }
+
+  function renderSlot(dayInfo: any, hour: number) {
+    const availability = getAvailabilityForSlot(dayInfo.value, hour)
+    const dayAppointments = getAppointmentsForSlot(dayInfo.dateStr, hour)
+    const dayClasses = getClassScheduleForSlot(dayInfo.value, hour)
+
+    const today = new Date()
+    const isToday = 
+      dayInfo.date.getDate() === today.getDate() &&
+      dayInfo.date.getMonth() === today.getMonth() &&
+      dayInfo.date.getFullYear() === today.getFullYear()
+
+    return (
+      <div
+        key={`${dayInfo.value}-${hour}`}
+        onClick={() => {
+          if (readOnly) return
+          if (availability && onAvailabilityClick) {
+            onAvailabilityClick(availability)
+          } else if (dayAppointments.length === 0 && dayClasses.length === 0 && onSlotClick) {
+            onSlotClick(dayInfo.value, hour)
           }
-        }
-      }
-    })
+        }}
+        className={`
+          border border-gray-200 p-2 min-h-20
+          ${isToday ? 'bg-blue-50' : ''}
+          ${availability ? 'bg-green-50' : !isToday ? 'bg-white' : ''}
+          ${!readOnly && 'hover:bg-gray-50 cursor-pointer'}
+          transition-colors
+        `}
+      >
+        {/* Müsaitlik */}
+        {availability && (
+          <div className="text-xs">
+            <div className="font-semibold text-green-800 mb-1">✅ Müsait</div>
+            <div className="text-green-600">
+              {availability.start_time.substring(0, 5)} - {availability.end_time.substring(0, 5)}
+            </div>
+          </div>
+        )}
 
-    return schedule
+        {/* Randevular */}
+        {dayAppointments.map((apt) => (
+          <div key={apt.id} className="text-xs mb-1 p-1 bg-blue-100 border-l-2 border-blue-500 rounded">
+            <div className="font-semibold text-blue-900">{apt.subject.icon} {apt.subject.name}</div>
+            <div className="text-blue-700">👤 {apt.student.full_name}</div>
+            <div className="text-blue-600">{apt.start_time.substring(0, 5)} - {apt.end_time.substring(0, 5)}</div>
+          </div>
+        ))}
+
+        {/* Sınıf Dersleri */}
+        {dayClasses.map((cls) => (
+          <div key={cls.id} className="text-xs mb-1 p-1 bg-purple-100 border-l-2 border-purple-500 rounded">
+            <div className="font-semibold text-purple-900">{cls.subject.icon} {cls.subject.name}</div>
+            <div className="text-purple-700">🏫 {cls.class.name} Sınıfı</div>
+            <div className="text-purple-600">{cls.start_time.substring(0, 5)} - {cls.end_time.substring(0, 5)}</div>
+            {cls.classroom && <div className="text-purple-500">📍 {cls.classroom}</div>}
+          </div>
+        ))}
+
+        {/* Boş slot */}
+        {!availability && dayAppointments.length === 0 && dayClasses.length === 0 && (
+          <div className="text-gray-400 text-xs text-center mt-4">Boş</div>
+        )}
+      </div>
+    )
   }
-
-  const weekSchedule = buildWeekSchedule()
-
-  // Liste görünümü için gruplama
-  function groupAvailabilitiesByDay() {
-    const grouped: { [key: number]: Availability[] } = {}
-    
-    availabilities.forEach(avail => {
-      if (!grouped[avail.day_of_week]) {
-        grouped[avail.day_of_week] = []
-      }
-      grouped[avail.day_of_week].push(avail)
-    })
-
-    return grouped
-  }
-
-  const groupedAvailabilities = groupAvailabilitiesByDay()
 
   return (
-    <div>
-      {/* Mobil Görünüm Değiştirici */}
-      <div className="lg:hidden mb-4 flex gap-2">
-        <button
-          onClick={() => setViewMode('list')}
-          className={`flex-1 px-4 py-2 rounded-lg font-medium transition-colors ${
-            viewMode === 'list'
-              ? 'bg-blue-600 text-white'
-              : 'bg-white text-gray-600 border border-gray-300'
-          }`}
-        >
-          📋 Liste
-        </button>
-        <button
-          onClick={() => setViewMode('grid')}
-          className={`flex-1 px-4 py-2 rounded-lg font-medium transition-colors ${
-            viewMode === 'grid'
-              ? 'bg-blue-600 text-white'
-              : 'bg-white text-gray-600 border border-gray-300'
-          }`}
-        >
-          📅 Takvim
-        </button>
-      </div>
+    <div className="bg-white rounded-lg shadow overflow-hidden">
+      {/* Header */}
+      <div className="p-4 bg-gray-50 border-b">
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-xl font-bold text-gray-900">
+            {weekStart.toLocaleDateString('tr-TR', { day: 'numeric', month: 'long' })} - {weekEnd.toLocaleDateString('tr-TR', { day: 'numeric', month: 'long', year: 'numeric' })}
+          </h2>
+          <div className="flex gap-2">
+            <button 
+              onClick={() => setCurrentWeekOffset(currentWeekOffset - 1)} 
+              className="px-4 py-2 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+            >
+              ← Önceki Hafta
+            </button>
+            <button 
+              onClick={() => setCurrentWeekOffset(0)} 
+              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+            >
+              Bu Hafta
+            </button>
+            <button 
+              onClick={() => setCurrentWeekOffset(currentWeekOffset + 1)} 
+              className="px-4 py-2 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+            >
+              Sonraki Hafta →
+            </button>
+          </div>
+        </div>
 
-      {/* Grid Görünümü - Desktop: Her zaman, Mobil: Sadece grid seçiliyse */}
-      <div className={`${viewMode === 'grid' ? 'block' : 'hidden'} lg:block`}>
-        <div className="bg-white rounded-lg shadow-md overflow-x-auto">
-          <div className="min-w-[800px]">
-            {/* Header */}
-            <div className="grid grid-cols-8 border-b bg-gray-50">
-              <div className="col-span-1 p-3 font-semibold text-gray-700 text-center">
-                Saat
-              </div>
-              {[1, 2, 3, 4, 5, 6, 0].map(dayIndex => (
-                <div
-                  key={dayIndex}
-                  className="p-3 text-center font-semibold text-gray-700 border-l"
-                >
-                  <span className="hidden sm:inline">{DAY_NAMES[dayIndex]}</span>
-                  <span className="sm:hidden">{DAY_NAMES[dayIndex].slice(0, 3)}</span>
-                </div>
-              ))}
-            </div>
-
-            {/* Grid */}
-            <div className="divide-y">
-              {WORK_HOURS.map(hour => (
-                <div key={hour} className="grid grid-cols-8 hover:bg-gray-50">
-                  <div className="col-span-1 p-3 text-sm text-gray-600 font-medium text-center border-r bg-gray-50">
-                    {hour.toString().padStart(2, '0')}:00
-                  </div>
-
-                  {[1, 2, 3, 4, 5, 6, 0].map(dayIndex => {
-                    const slot = weekSchedule[dayIndex][hour]
-                    const isAvailable = slot?.available
-
-                    return (
-                      <button
-                        key={`${dayIndex}-${hour}`}
-                        onClick={() => {
-                          if (isAvailable && slot.availabilityId) {
-                            const availability = availabilities.find(
-                              a => a.id === slot.availabilityId
-                            )
-                            if (availability) {
-                              onAvailabilityClick(availability)
-                            }
-                          } else {
-                            onSlotClick(dayIndex, hour)
-                          }
-                        }}
-                        className={`
-                          p-3 text-xs border-l transition-colors relative
-                          ${isAvailable 
-                            ? 'bg-green-50 hover:bg-green-100 text-green-800 font-medium' 
-                            : 'bg-white hover:bg-blue-50 text-gray-400'
-                          }
-                        `}
-                      >
-                        {isAvailable ? (
-                          <div className="flex flex-col items-center justify-center h-full">
-                            <span className="text-lg">✓</span>
-                            <span className="text-xs hidden sm:inline">Müsait</span>
-                          </div>
-                        ) : (
-                          <div className="flex items-center justify-center h-full">
-                            <span className="text-2xl text-gray-300">+</span>
-                          </div>
-                        )}
-                      </button>
-                    )
-                  })}
-                </div>
-              ))}
-            </div>
-
-            {/* Legend */}
-            <div className="border-t bg-gray-50 px-6 py-3 flex items-center gap-6 text-sm">
-              <div className="flex items-center gap-2">
-                <div className="w-4 h-4 bg-green-100 border border-green-300 rounded"></div>
-                <span className="text-gray-600">Müsait</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <div className="w-4 h-4 bg-white border border-gray-300 rounded"></div>
-                <span className="text-gray-600">Boş</span>
-              </div>
-            </div>
+        {/* Legend */}
+        <div className="flex flex-wrap gap-4 text-sm">
+          <div className="flex items-center gap-2">
+            <div className="w-4 h-4 bg-green-500 rounded"></div>
+            <span>Müsait</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="w-4 h-4 bg-blue-500 rounded"></div>
+            <span>Randevu</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="w-4 h-4 bg-purple-500 rounded"></div>
+            <span>Sınıf Dersi</span>
           </div>
         </div>
       </div>
 
-      {/* Liste Görünümü - Sadece mobilde ve liste seçiliyse */}
-      <div className={`${viewMode === 'list' ? 'block' : 'hidden'} lg:hidden`}>
-        <div className="space-y-4">
-          {[1, 2, 3, 4, 5, 6, 0].map(dayIndex => {
-            const dayAvailabilities = groupedAvailabilities[dayIndex] || []
-
-            return (
-              <div key={dayIndex} className="bg-white rounded-lg shadow-md overflow-hidden">
-                <div className="bg-linear-to-r from-blue-500 to-blue-600 px-4 py-3">
-                  <h3 className="text-white font-semibold text-lg">
-                    {DAY_NAMES[dayIndex]}
-                  </h3>
-                </div>
+      {/* Calendar Grid */}
+      <div className="overflow-x-auto">
+        <table className="min-w-full border-collapse">
+          <thead>
+            <tr className="bg-gray-100">
+              <th className="border border-gray-200 p-3 text-center font-semibold text-gray-700 w-24 bg-gray-100">
+                Saat
+              </th>
+              {weekDates.map(dayInfo => {
+                const today = new Date()
+                const isToday = 
+                  dayInfo.date.getDate() === today.getDate() && 
+                  dayInfo.date.getMonth() === today.getMonth() &&
+                  dayInfo.date.getFullYear() === today.getFullYear()
                 
-                <div className="p-4">
-                  {dayAvailabilities.length > 0 ? (
-                    <div className="space-y-3">
-                      {dayAvailabilities.map(avail => (
-                        <button
-                          key={avail.id}
-                          onClick={() => onAvailabilityClick(avail)}
-                          className="w-full text-left bg-green-50 hover:bg-green-100 border border-green-200 rounded-lg p-3 transition-colors"
-                        >
-                          <div className="flex items-center justify-between">
-                            <div>
-                              <div className="font-semibold text-green-800">
-                                ⏰ {avail.start_time} - {avail.end_time}
-                              </div>
-                              {avail.notes && (
-                                <div className="text-sm text-gray-600 mt-1">
-                                  📝 {avail.notes}
-                                </div>
-                              )}
-                            </div>
-                            <div className="text-green-600 text-2xl">
-                              ✓
-                            </div>
-                          </div>
-                        </button>
-                      ))}
+                return (
+                  <th 
+                    key={dayInfo.value} 
+                    className={`border border-gray-200 p-3 text-center font-semibold min-w-[140px] ${
+                      isToday ? 'bg-blue-500 text-white' : 'bg-gray-100 text-gray-700'
+                    }`}
+                  >
+                    <div>{dayInfo.label}</div>
+                    <div className={`text-xs font-normal mt-1 ${isToday ? 'text-blue-100' : 'text-gray-500'}`}>
+                      {dayInfo.dayNumber} {dayInfo.monthName}
                     </div>
-                  ) : (
-                    <button
-                      onClick={() => onSlotClick(dayIndex, 9)}
-                      className="w-full bg-gray-50 hover:bg-blue-50 border-2 border-dashed border-gray-300 rounded-lg p-4 text-center text-gray-500 transition-colors"
-                    >
-                      <div className="text-3xl mb-2">+</div>
-                      <div className="text-sm">Müsaitlik eklemek için tıklayın</div>
-                    </button>
-                  )}
-                </div>
-              </div>
-            )
-          })}
-        </div>
+                  </th>
+                )
+              })}
+            </tr>
+          </thead>
+          <tbody>
+            {HOURS.map(hour => (
+              <tr key={hour}>
+                <td className="border border-gray-200 p-3 text-center font-medium text-gray-700 bg-gray-50">
+                  {hour.toString().padStart(2, '0')}:00
+                </td>
+                {weekDates.map(dayInfo => (
+                  <td key={`${dayInfo.value}-${hour}`} className="border border-gray-200 p-0">
+                    {renderSlot(dayInfo, hour)}
+                  </td>
+                ))}
+              </tr>
+            ))}
+          </tbody>
+        </table>
       </div>
     </div>
   )
