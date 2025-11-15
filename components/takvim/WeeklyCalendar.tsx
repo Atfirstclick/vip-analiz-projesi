@@ -119,37 +119,38 @@ export default function WeeklyCalendar({
       dayInfo.date.getMonth() === today.getMonth() &&
       dayInfo.date.getFullYear() === today.getFullYear()
 
+    // ÖNCELİK SIRASI: Randevu > Sınıf Dersi > Müsaitlik > Boş
+    const hasAppointment = dayAppointments.length > 0
+    const hasClass = dayClasses.length > 0
+    const hasAvailability = availability && !hasAppointment && !hasClass
+
     return (
       <div
         key={`${dayInfo.value}-${hour}`}
         onClick={() => {
           if (readOnly) return
-          if (availability && onAvailabilityClick) {
+          if (hasAppointment || hasClass) return // Dolu slotlara tıklanamaz
+          if (hasAvailability && onAvailabilityClick) {
             onAvailabilityClick(availability)
-          } else if (dayAppointments.length === 0 && dayClasses.length === 0 && onSlotClick) {
+          } else if (!hasAvailability && onSlotClick) {
             onSlotClick(dayInfo.value, hour)
           }
         }}
         className={`
           border border-gray-200 p-2 min-h-20
-          ${isToday ? 'bg-blue-50' : ''}
-          ${availability ? 'bg-green-50' : !isToday ? 'bg-white' : ''}
-          ${!readOnly && 'hover:bg-gray-50 cursor-pointer'}
+          ${
+            hasAppointment ? 'bg-blue-50' :
+            hasClass ? 'bg-purple-50' :
+            hasAvailability ? 'bg-green-50' :
+            isToday ? 'bg-blue-50/30' :
+            'bg-white'
+          }
+          ${!readOnly && !hasAppointment && !hasClass && 'hover:bg-gray-50 cursor-pointer'}
           transition-colors
         `}
       >
-        {/* Müsaitlik */}
-        {availability && (
-          <div className="text-xs">
-            <div className="font-semibold text-green-800 mb-1">✅ Müsait</div>
-            <div className="text-green-600">
-              {availability.start_time.substring(0, 5)} - {availability.end_time.substring(0, 5)}
-            </div>
-          </div>
-        )}
-
-        {/* Randevular */}
-        {dayAppointments.map((apt) => (
+        {/* SADECE RANDEVULAR (öncelik 1) */}
+        {hasAppointment && dayAppointments.map((apt) => (
           <div key={apt.id} className="text-xs mb-1 p-1 bg-blue-100 border-l-2 border-blue-500 rounded">
             <div className="font-semibold text-blue-900">{apt.subject.icon} {apt.subject.name}</div>
             <div className="text-blue-700">👤 {apt.student.full_name}</div>
@@ -157,8 +158,8 @@ export default function WeeklyCalendar({
           </div>
         ))}
 
-        {/* Sınıf Dersleri */}
-        {dayClasses.map((cls) => (
+        {/* SADECE SINIF DERSLERİ (öncelik 2) */}
+        {!hasAppointment && hasClass && dayClasses.map((cls) => (
           <div key={cls.id} className="text-xs mb-1 p-1 bg-purple-100 border-l-2 border-purple-500 rounded">
             <div className="font-semibold text-purple-900">{cls.subject.icon} {cls.subject.name}</div>
             <div className="text-purple-700">🏫 {cls.class.name} Sınıfı</div>
@@ -167,8 +168,18 @@ export default function WeeklyCalendar({
           </div>
         ))}
 
-        {/* Boş slot */}
-        {!availability && dayAppointments.length === 0 && dayClasses.length === 0 && (
+        {/* SADECE MÜSAİTLİK (öncelik 3) */}
+        {hasAvailability && (
+          <div className="text-xs">
+            <div className="font-semibold text-green-800 mb-1">✅ Müsait</div>
+            <div className="text-green-600">
+              {availability.start_time.substring(0, 5)} - {availability.end_time.substring(0, 5)}
+            </div>
+          </div>
+        )}
+
+        {/* BOŞ SLOT (öncelik 4) */}
+        {!hasAppointment && !hasClass && !hasAvailability && (
           <div className="text-gray-400 text-xs text-center mt-4">Boş</div>
         )}
       </div>
