@@ -3,10 +3,9 @@ import { notFound } from 'next/navigation'
 import ProductDetail from './ProductDetail'
 
 export default async function UrunDetayPage({ params }: { params: Promise<{ id: string }> }) {
-  const { id } = await params  // ← Bu satır eklendi
+  const { id } = await params
   const supabase = await createClient()
 
-  // Ürünü ve varyantlarını çek
   const { data: product, error } = await supabase
     .from('products')
     .select(`
@@ -23,7 +22,7 @@ export default async function UrunDetayPage({ params }: { params: Promise<{ id: 
         is_active
       )
     `)
-    .eq('id', id)  // params.id yerine sadece id
+    .eq('id', id)
     .eq('is_active', true)
     .single()
 
@@ -31,11 +30,10 @@ export default async function UrunDetayPage({ params }: { params: Promise<{ id: 
     notFound()
   }
 
-  // Sadece aktif varyantları filtrele
   const activeVariants = product.product_variants?.filter((v: any) => v.is_active) || []
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-linear-to-b from-white to-vip-gold/10">
       <ProductDetail product={{ ...product, product_variants: activeVariants }} />
     </div>
   )

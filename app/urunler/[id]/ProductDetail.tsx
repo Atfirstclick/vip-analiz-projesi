@@ -56,11 +56,10 @@ export default function ProductDetail({ product }: { product: Product }) {
     setMessage({ type: '', text: '' })
 
     try {
-      // Kullanıcı giriş yapmış mı kontrol et
       const { data: { user } } = await supabase.auth.getUser()
       
       if (!user) {
-        router.push('/login')
+        router.push('/giris')
         return
       }
 
@@ -90,19 +89,19 @@ export default function ProductDetail({ product }: { product: Product }) {
   }
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 pt-32">
       {/* Geri Butonu */}
       <button
         onClick={() => router.back()}
-        className="flex items-center text-gray-600 hover:text-gray-900 mb-8 font-medium"
+        className="flex items-center text-vip-navy hover:text-vip-gold mb-8 font-medium transition-colors"
       >
         ← Geri Dön
       </button>
 
-      <div className="bg-white rounded-2xl shadow-lg overflow-hidden">
+      <div className="bg-white rounded-2xl shadow-xl overflow-hidden border-2 border-vip-gold/20">
         <div className="grid md:grid-cols-2 gap-8">
           {/* Sol: Ürün Görseli */}
-          <div className="bg-gradient-to-br from-blue-50 to-indigo-50 flex items-center justify-center p-12">
+          <div className="bg-linear-to-br from-vip-gold/20 to-vip-gold/5 flex items-center justify-center p-12 relative">
             {product.image_url ? (
               <img 
                 src={product.image_url} 
@@ -110,22 +109,30 @@ export default function ProductDetail({ product }: { product: Product }) {
                 className="max-w-full h-auto rounded-lg shadow-lg"
               />
             ) : (
-              <span className="text-9xl">
-                {product.category === 'etut' && '📚'}
-                {product.category === 'deneme_sinavi' && '📝'}
-                {product.category === 'ders_paketi' && '🎓'}
-                {product.category === 'video_ders' && '🎥'}
-              </span>
+              <div className="text-center">
+                <span className="text-9xl">
+                  {product.category === 'etut' && '📚'}
+                  {product.category === 'deneme_sinavi' && '📝'}
+                  {product.category === 'ders_paketi' && '🎓'}
+                  {product.category === 'video_ders' && '🎥'}
+                </span>
+                <div className="mt-6 text-3xl font-bold text-vip-navy">
+                  VIP ANALİZ
+                </div>
+              </div>
             )}
+            {/* Dekoratif element */}
+            <div className="absolute top-4 right-4 w-20 h-20 bg-vip-gold/20 rounded-full blur-2xl"></div>
+            <div className="absolute bottom-4 left-4 w-32 h-32 bg-vip-navy/10 rounded-full blur-3xl"></div>
           </div>
 
           {/* Sağ: Ürün Bilgileri */}
           <div className="p-8">
-            <span className="inline-block px-3 py-1 text-sm font-semibold rounded-full bg-blue-100 text-blue-800 mb-4">
+            <span className="inline-block px-4 py-2 text-sm font-semibold rounded-full bg-vip-gold text-vip-navy mb-4 shadow-sm">
               {CATEGORY_LABELS[product.category]}
             </span>
 
-            <h1 className="text-4xl font-bold text-gray-900 mb-4">
+            <h1 className="text-4xl font-bold text-vip-navy mb-4">
               {product.name}
             </h1>
 
@@ -138,7 +145,7 @@ export default function ProductDetail({ product }: { product: Product }) {
             {/* Varyant Seçimi */}
             {product.product_variants.length > 0 && (
               <div className="mb-8">
-                <label className="block text-sm font-semibold text-gray-900 mb-3">
+                <label className="block text-sm font-semibold text-vip-navy mb-3">
                   Seçenekler
                 </label>
                 <div className="space-y-3">
@@ -148,13 +155,13 @@ export default function ProductDetail({ product }: { product: Product }) {
                       onClick={() => setSelectedVariant(variant)}
                       className={`w-full text-left p-4 rounded-lg border-2 transition-all ${
                         selectedVariant?.id === variant.id
-                          ? 'border-blue-600 bg-blue-50'
-                          : 'border-gray-200 hover:border-gray-300'
+                          ? 'border-vip-gold bg-vip-gold/10 shadow-md'
+                          : 'border-gray-200 hover:border-vip-gold/50 hover:bg-vip-gold/5'
                       }`}
                     >
                       <div className="flex justify-between items-center">
                         <div>
-                          <p className="font-semibold text-gray-900">{variant.name}</p>
+                          <p className="font-semibold text-vip-navy">{variant.name}</p>
                           <div className="flex gap-4 mt-1 text-sm text-gray-600">
                             {variant.grade && <span>📚 {variant.grade}. Sınıf</span>}
                             {variant.subject && <span>📖 {variant.subject}</span>}
@@ -167,7 +174,7 @@ export default function ProductDetail({ product }: { product: Product }) {
                           </div>
                         </div>
                         <div className="text-right">
-                          <p className="text-2xl font-bold text-blue-600">
+                          <p className="text-2xl font-bold text-vip-navy">
                             {formatPrice(variant.price)}
                           </p>
                           {variant.stock_quantity !== null && (
@@ -187,8 +194,8 @@ export default function ProductDetail({ product }: { product: Product }) {
             {message.text && (
               <div className={`mb-6 p-4 rounded-lg ${
                 message.type === 'success' 
-                  ? 'bg-green-50 text-green-800 border border-green-200' 
-                  : 'bg-red-50 text-red-800 border border-red-200'
+                  ? 'bg-green-50 text-green-800 border-2 border-green-200' 
+                  : 'bg-red-50 text-red-800 border-2 border-red-200'
               }`}>
                 {message.text}
               </div>
@@ -198,35 +205,39 @@ export default function ProductDetail({ product }: { product: Product }) {
             <button
               onClick={handleAddToCart}
               disabled={adding || !selectedVariant}
-              className="w-full bg-blue-600 text-white py-4 px-8 rounded-lg text-lg font-semibold hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors"
+              className="w-full bg-vip-navy text-white py-4 px-8 rounded-lg text-lg font-semibold hover:bg-vip-gold hover:text-vip-navy disabled:bg-gray-300 disabled:cursor-not-allowed transition-all shadow-lg hover:shadow-xl"
             >
               {adding ? 'Ekleniyor...' : '🛒 Sepete Ekle'}
             </button>
 
             {/* Ürün Özellikleri */}
             {selectedVariant && (
-              <div className="mt-8 pt-8 border-t">
-                <h3 className="font-semibold text-gray-900 mb-4">Paket İçeriği</h3>
-                <ul className="space-y-2 text-gray-600">
+              <div className="mt-8 pt-8 border-t border-gray-200">
+                <h3 className="font-semibold text-vip-navy mb-4 text-lg">Paket İçeriği</h3>
+                <ul className="space-y-3 text-gray-600">
                   {selectedVariant.session_count && (
-                    <li className="flex items-center gap-2">
-                      <span className="text-green-600">✓</span>
-                      {selectedVariant.session_count} adet birebir etüt seansı
+                    <li className="flex items-center gap-3">
+                      <span className="text-vip-gold text-xl">✓</span>
+                      <span>{selectedVariant.session_count} adet birebir etüt seansı</span>
                     </li>
                   )}
                   {selectedVariant.duration_minutes && (
-                    <li className="flex items-center gap-2">
-                      <span className="text-green-600">✓</span>
-                      Toplam {selectedVariant.duration_minutes} dakika ders
+                    <li className="flex items-center gap-3">
+                      <span className="text-vip-gold text-xl">✓</span>
+                      <span>Toplam {selectedVariant.duration_minutes} dakika ders</span>
                     </li>
                   )}
-                  <li className="flex items-center gap-2">
-                    <span className="text-green-600">✓</span>
-                    Uzman öğretmen desteği
+                  <li className="flex items-center gap-3">
+                    <span className="text-vip-gold text-xl">✓</span>
+                    <span>Uzman öğretmen desteği</span>
                   </li>
-                  <li className="flex items-center gap-2">
-                    <span className="text-green-600">✓</span>
-                    Kişiye özel ders programı
+                  <li className="flex items-center gap-3">
+                    <span className="text-vip-gold text-xl">✓</span>
+                    <span>Kişiye özel ders programı</span>
+                  </li>
+                  <li className="flex items-center gap-3">
+                    <span className="text-vip-gold text-xl">✓</span>
+                    <span>İlerleme takibi ve raporlama</span>
                   </li>
                 </ul>
               </div>

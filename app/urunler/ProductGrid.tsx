@@ -62,10 +62,10 @@ export default function ProductGrid({ products }: { products: Product[] }) {
         <Link
           key={product.id}
           href={`/urunler/${product.id}`}
-          className="bg-white rounded-xl shadow-sm hover:shadow-xl transition-shadow duration-300 overflow-hidden group"
+          className="bg-white rounded-xl shadow-lg hover:shadow-2xl transition-all duration-300 overflow-hidden group border-2 border-transparent hover:border-vip-gold"
         >
           {/* Ürün Görseli */}
-          <div className="h-56 bg-gradient-to-br from-blue-50 to-indigo-50 flex items-center justify-center overflow-hidden">
+          <div className="h-56 bg-linear-to-br from-vip-gold/20 to-vip-gold/5 flex items-center justify-center overflow-hidden relative">
             {product.image_url ? (
               <img 
                 src={product.image_url} 
@@ -73,22 +73,29 @@ export default function ProductGrid({ products }: { products: Product[] }) {
                 className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
               />
             ) : (
-              <span className="text-7xl">
-                {product.category === 'etut' && '📚'}
-                {product.category === 'deneme_sinavi' && '📝'}
-                {product.category === 'ders_paketi' && '🎓'}
-                {product.category === 'video_ders' && '🎥'}
-              </span>
+              <div className="text-center">
+                <span className="text-7xl">
+                  {product.category === 'etut' && '📚'}
+                  {product.category === 'deneme_sinavi' && '📝'}
+                  {product.category === 'ders_paketi' && '🎓'}
+                  {product.category === 'video_ders' && '🎥'}
+                </span>
+                <div className="mt-4 text-2xl font-bold text-vip-navy">
+                  VIP ANALİZ
+                </div>
+              </div>
             )}
+            {/* Overlay efekti */}
+            <div className="absolute inset-0 bg-linear-to-t from-vip-navy/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
           </div>
 
           {/* Ürün Bilgileri */}
           <div className="p-6">
-            <span className="inline-block px-3 py-1 text-xs font-semibold rounded-full bg-blue-100 text-blue-800 mb-3">
+            <span className="inline-block px-3 py-1 text-xs font-semibold rounded-full bg-vip-gold text-vip-navy mb-3">
               {CATEGORY_LABELS[product.category]}
             </span>
 
-            <h3 className="text-xl font-bold text-gray-900 mb-2 group-hover:text-blue-600 transition-colors">
+            <h3 className="text-xl font-bold text-vip-navy mb-2 group-hover:text-vip-gold transition-colors">
               {product.name}
             </h3>
 
@@ -98,14 +105,14 @@ export default function ProductGrid({ products }: { products: Product[] }) {
               </p>
             )}
 
-            <div className="flex justify-between items-center pt-4 border-t">
+            <div className="flex justify-between items-center pt-4 border-t border-gray-100">
               <div>
                 <p className="text-xs text-gray-500 mb-1">Fiyat</p>
-                <p className="text-2xl font-bold text-blue-600">
+                <p className="text-2xl font-bold text-vip-navy">
                   {getPriceRange(product)}
                 </p>
               </div>
-              <div className="bg-blue-600 text-white px-6 py-3 rounded-lg font-medium group-hover:bg-blue-700 transition-colors">
+              <div className="bg-vip-navy text-white px-6 py-3 rounded-lg font-medium group-hover:bg-vip-gold group-hover:text-vip-navy transition-all duration-300 shadow-md">
                 İncele →
               </div>
             </div>

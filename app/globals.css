@@ -3,13 +3,13 @@
 /* VipAnaliz Renk Paleti */
 :root {
   /* Ana renkler */
-  --color-primary: #dbbe5a;      /* Altın sarısı */
+  --color-primary: #ffde59;      /* Altın sarısı */
   --color-secondary: #20344c;    /* Lacivert */
   --color-accent: #ffffff;       /* Beyaz */
   
   /* Primary varyasyonları */
-  --color-primary-light: #e8d084;
-  --color-primary-dark: #c4a53d;
+  --color-primary-light: #ffe889;
+  --color-primary-dark: #e6c640;
   
   /* Secondary varyasyonları */
   --color-secondary-light: #2d4a6e;
