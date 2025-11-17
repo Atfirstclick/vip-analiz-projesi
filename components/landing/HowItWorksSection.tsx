@@ -20,7 +20,7 @@ const steps = [
   {
     number: '3',
     image: '/images/start-lesson-illustration.svg',
-    title: 'Dersler Başla',
+    title: 'Derslere Başla',
     description: 'Maksimum 3 kişilik VIP sınıflarında kaliteli eğitim almaya başla'
   },
   {
