@@ -7,7 +7,7 @@ export default function Footer() {
   const currentYear = new Date().getFullYear()
 
   return (
-    <footer className="bg-vip-navy text-white">
+    <footer id="iletisim" className="bg-vip-navy text-white scroll-mt-32">
       {/* Ana İçerik */}
       <div className="py-16">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -86,8 +86,8 @@ export default function Footer() {
 
               {/* Çalışma Saatleri - Opsiyonel */}
               <div className="text-gray-400 text-sm">
-                <p>Pazartesi - Cumartesi: 09:00 - 18:00</p>
-                <p>Pazar: Kapalı</p>
+                <p>Salı - Pazar: 09:00 - 21:00</p>
+                <p>Pazartesi: Kapalı</p>
               </div>
             </div>
 
