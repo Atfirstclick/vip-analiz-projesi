@@ -1,6 +1,7 @@
 import { redirect } from 'next/navigation'
 import { isAdmin, getCurrentUser } from '@/lib/supabase/server'
 import Link from 'next/link'
+import Logo from '@/components/ui/Logo'
 
 export default async function AdminLayout({
   children,
@@ -10,7 +11,7 @@ export default async function AdminLayout({
   const user = await getCurrentUser()
   
   if (!user) {
-    redirect('/login')
+    redirect('/giris')
   }
 
   const adminCheck = await isAdmin()
@@ -20,65 +21,122 @@ export default async function AdminLayout({
   }
 
   return (
-    <div className="min-h-screen bg-gray-100">
-      {/* Admin Navigation */}
-      <nav className="bg-white shadow-sm border-b">
+    <div className="min-h-screen bg-linear-to-br from-gray-50 to-gray-100">
+      {/* Admin Navbar */}
+      <nav className="bg-white shadow-lg border-b-2 border-vip-gold">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between h-16">
-            <div className="flex">
-              <div className="shrink-0 flex items-center">
-                <span className="text-2xl">👑</span>
-                <span className="ml-2 text-xl font-bold text-gray-900">
-                  Admin Panel
-                </span>
-              </div>
-              <div className="hidden sm:ml-6 sm:flex sm:space-x-8">
+          <div className="flex justify-between h-20">
+            {/* Sol - Logo & Nav Links */}
+            <div className="flex items-center gap-8">
+              {/* Logo */}
+              <Link href="/admin" className="flex items-center gap-3">
+                <Logo size="sm" />
+                <div>
+                  <span className="block text-lg font-bold text-vip-navy">
+                    Admin Panel
+                  </span>
+                  <span className="block text-xs text-vip-navy font-semibold">
+                    VipAnaliz Yönetim
+                  </span>
+                </div>
+              </Link>
+
+              {/* Navigation Links */}
+              <div className="hidden md:flex items-center gap-1">
                 <Link
                   href="/admin"
-                  className="border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700 inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium"
+                  className="px-4 py-2 rounded-lg text-sm font-medium text-gray-700 hover:bg-vip-gold/10 hover:text-vip-navy transition-all"
                 >
-                  Dashboard
+                  📊 Dashboard
                 </Link>
                 <Link
                   href="/admin/kullanicilar"
-                  className="border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700 inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium"
+                  className="px-4 py-2 rounded-lg text-sm font-medium text-gray-700 hover:bg-vip-gold/10 hover:text-vip-navy transition-all"
                 >
-                  Kullanıcılar
+                  👥 Kullanıcılar
                 </Link>
                 <Link
                   href="/admin/urunler"
-                  className="border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700 inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium"
+                  className="px-4 py-2 rounded-lg text-sm font-medium text-gray-700 hover:bg-vip-gold/10 hover:text-vip-navy transition-all"
                 >
-                  Ürünler
+                  🛍️ Ürünler
                 </Link>
                 <Link
                   href="/admin/dersler"
-                  className="border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700 inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium"
+                  className="px-4 py-2 rounded-lg text-sm font-medium text-gray-700 hover:bg-vip-gold/10 hover:text-vip-navy transition-all"
                 >
-                  Dersler
+                  📚 Dersler
                 </Link>
                 <Link
                   href="/admin/ogretmenler"
-                  className="border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700 inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium"
+                  className="px-4 py-2 rounded-lg text-sm font-medium text-gray-700 hover:bg-vip-gold/10 hover:text-vip-navy transition-all"
                 >
-                  Öğretmenler
+                  👨‍🏫 Öğretmenler
+                </Link>
+                <Link
+                  href="/admin/siniflar"
+                  className="px-4 py-2 rounded-lg text-sm font-medium text-gray-700 hover:bg-vip-gold/10 hover:text-vip-navy transition-all"
+                >
+                  🏫 Sınıflar
                 </Link>
               </div>
             </div>
+
+            {/* Sağ - Ana Sayfa Link */}
             <div className="flex items-center">
               <Link
                 href="/"
-                className="text-sm text-gray-500 hover:text-gray-700"
+                className="px-4 py-2 text-sm font-medium text-gray-600 hover:text-vip-navy transition-colors"
               >
-                Ana Sayfa
+                ← Ana Sayfa
               </Link>
             </div>
           </div>
         </div>
+
+        {/* Mobile Navigation */}
+        <div className="md:hidden border-t border-gray-200 px-4 py-3 flex gap-2 overflow-x-auto">
+          <Link
+            href="/admin"
+            className="px-3 py-1.5 rounded-lg text-xs font-medium text-gray-700 hover:bg-vip-gold/10 hover:text-vip-navy whitespace-nowrap"
+          >
+            📊 Dashboard
+          </Link>
+          <Link
+            href="/admin/kullanicilar"
+            className="px-3 py-1.5 rounded-lg text-xs font-medium text-gray-700 hover:bg-vip-gold/10 hover:text-vip-navy whitespace-nowrap"
+          >
+            👥 Kullanıcılar
+          </Link>
+          <Link
+            href="/admin/urunler"
+            className="px-3 py-1.5 rounded-lg text-xs font-medium text-gray-700 hover:bg-vip-gold/10 hover:text-vip-navy whitespace-nowrap"
+          >
+            🛍️ Ürünler
+          </Link>
+          <Link
+            href="/admin/dersler"
+            className="px-3 py-1.5 rounded-lg text-xs font-medium text-gray-700 hover:bg-vip-gold/10 hover:text-vip-navy whitespace-nowrap"
+          >
+            📚 Dersler
+          </Link>
+          <Link
+            href="/admin/ogretmenler"
+            className="px-3 py-1.5 rounded-lg text-xs font-medium text-gray-700 hover:bg-vip-gold/10 hover:text-vip-navy whitespace-nowrap"
+          >
+            👨‍🏫 Öğretmenler
+          </Link>
+          <Link
+            href="/admin/siniflar"
+            className="px-3 py-1.5 rounded-lg text-xs font-medium text-gray-700 hover:bg-vip-gold/10 hover:text-vip-navy whitespace-nowrap"
+          >
+            🏫 Sınıflar
+          </Link>
+        </div>
       </nav>
 
       {/* Main Content */}
-      <main className="py-10">
+      <main className="py-8">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           {children}
         </div>

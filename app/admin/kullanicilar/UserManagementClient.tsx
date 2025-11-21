@@ -13,10 +13,10 @@ interface User {
 }
 
 const ROLES = [
-  { value: 'student', label: '👨‍🎓 Öğrenci', color: 'bg-gray-100 text-gray-800' },
-  { value: 'teacher', label: '👨‍🏫 Öğretmen', color: 'bg-blue-100 text-blue-800' },
-  { value: 'parent', label: '👪 Veli', color: 'bg-green-100 text-green-800' },
-  { value: 'admin', label: '👑 Yönetici', color: 'bg-purple-100 text-purple-800' },
+  { value: 'student', label: '👨‍🎓 Öğrenci', color: 'bg-green-100 text-green-800 border-2 border-green-300' },
+  { value: 'teacher', label: '👨‍🏫 Öğretmen', color: 'bg-blue-100 text-blue-800 border-2 border-blue-300' },
+  { value: 'parent', label: '👪 Veli', color: 'bg-purple-100 text-purple-800 border-2 border-purple-300' },
+  { value: 'admin', label: '👑 Yönetici', color: 'bg-vip-gold text-vip-navy border-2 border-vip-gold' },
 ]
 
 export default function UserManagementClient({ users }: { users: User[] }) {
@@ -33,14 +33,14 @@ export default function UserManagementClient({ users }: { users: User[] }) {
   })
   const [loading, setLoading] = useState(false)
   const [showEditModal, setShowEditModal] = useState(false)
-const [editingUser, setEditingUser] = useState<User | null>(null)
-const [editFormData, setEditFormData] = useState({
-  email: '',
-  password: '', // Boş bırakılırsa şifre değişmez
-  full_name: '',
-  phone: '',
-  role: 'student'
-})
+  const [editingUser, setEditingUser] = useState<User | null>(null)
+  const [editFormData, setEditFormData] = useState({
+    email: '',
+    password: '',
+    full_name: '',
+    phone: '',
+    role: 'student'
+  })
 
   const supabase = createBrowserClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -58,91 +58,89 @@ const [editFormData, setEditFormData] = useState({
     }
   }
 
-async function handleAddUser(e: React.FormEvent) {
-  e.preventDefault()
-  setLoading(true)
-  setMessage({ type: '', text: '' })
+  async function handleAddUser(e: React.FormEvent) {
+    e.preventDefault()
+    setLoading(true)
+    setMessage({ type: '', text: '' })
 
-  try {
-    const response = await fetch('/api/admin/users/create', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(formData)
-    })
-
-    const data = await response.json()
-
-    if (response.ok) {
-      setMessage({ type: 'success', text: '✓ Kullanıcı başarıyla eklendi!' })
-      setFormData({
-        email: '',
-        password: '',
-        full_name: '',
-        phone: '',
-        role: 'student'
+    try {
+      const response = await fetch('/api/admin/users/create', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(formData)
       })
-      setShowAddModal(false)
-      await refreshUsers()
-      setTimeout(() => setMessage({ type: '', text: '' }), 3000)
-    } else {
-      // Hata mesajını göster ama modal'ı kapatma
-      setMessage({ type: 'error', text: data.error || 'Bir hata oluştu' })
-      // Modal açık kalsın, loading false olsun
+
+      const data = await response.json()
+
+      if (response.ok) {
+        setMessage({ type: 'success', text: '✓ Kullanıcı başarıyla eklendi!' })
+        setFormData({
+          email: '',
+          password: '',
+          full_name: '',
+          phone: '',
+          role: 'student'
+        })
+        setShowAddModal(false)
+        await refreshUsers()
+        setTimeout(() => setMessage({ type: '', text: '' }), 3000)
+      } else {
+        setMessage({ type: 'error', text: data.error || 'Bir hata oluştu' })
+      }
+    } catch (error) {
+      setMessage({ type: 'error', text: 'Kullanıcı eklenemedi' })
+    } finally {
+      setLoading(false)
     }
-  } catch (error) {
-    setMessage({ type: 'error', text: 'Kullanıcı eklenemedi' })
-  } finally {
-    setLoading(false) // Her durumda loading'i kapat
   }
-}
 
-function openEditModal(user: User) {
-  setEditingUser(user)
-  setEditFormData({
-    email: user.email || '',
-    password: '', // Şifre boş
-    full_name: user.full_name || '',
-    phone: user.phone || '',
-    role: user.role
-  })
-  setShowEditModal(true)
-  setMessage({ type: '', text: '' })
-}
-
-async function handleUpdateUser(e: React.FormEvent) {
-  e.preventDefault()
-  if (!editingUser) return
-
-  setLoading(true)
-  setMessage({ type: '', text: '' })
-
-  try {
-    const response = await fetch('/api/admin/users/update', {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        userId: editingUser.id,
-        ...editFormData
-      })
+  function openEditModal(user: User) {
+    setEditingUser(user)
+    setEditFormData({
+      email: user.email || '',
+      password: '',
+      full_name: user.full_name || '',
+      phone: user.phone || '',
+      role: user.role
     })
-
-    const data = await response.json()
-
-    if (response.ok) {
-      setMessage({ type: 'success', text: '✓ Kullanıcı başarıyla güncellendi!' })
-      setShowEditModal(false)
-      setEditingUser(null)
-      await refreshUsers()
-      setTimeout(() => setMessage({ type: '', text: '' }), 3000)
-    } else {
-      setMessage({ type: 'error', text: data.error || 'Güncellenemedi' })
-    }
-  } catch (error) {
-    setMessage({ type: 'error', text: 'Kullanıcı güncellenemedi' })
-  } finally {
-    setLoading(false)
+    setShowEditModal(true)
+    setMessage({ type: '', text: '' })
   }
-}
+
+  async function handleUpdateUser(e: React.FormEvent) {
+    e.preventDefault()
+    if (!editingUser) return
+
+    setLoading(true)
+    setMessage({ type: '', text: '' })
+
+    try {
+      const response = await fetch('/api/admin/users/update', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          userId: editingUser.id,
+          ...editFormData
+        })
+      })
+
+      const data = await response.json()
+
+      if (response.ok) {
+        setMessage({ type: 'success', text: '✓ Kullanıcı başarıyla güncellendi!' })
+        setShowEditModal(false)
+        setEditingUser(null)
+        await refreshUsers()
+        setTimeout(() => setMessage({ type: '', text: '' }), 3000)
+      } else {
+        setMessage({ type: 'error', text: data.error || 'Güncellenemedi' })
+      }
+    } catch (error) {
+      setMessage({ type: 'error', text: 'Kullanıcı güncellenemedi' })
+    } finally {
+      setLoading(false)
+    }
+  }
 
   async function handleDeleteUser(userId: string, userName: string) {
     if (!confirm(`"${userName}" kullanıcısını silmek istediğinize emin misiniz?`)) {
@@ -190,7 +188,7 @@ async function handleUpdateUser(e: React.FormEvent) {
 
       setMessage({ 
         type: 'success', 
-        text: 'Rol başarıyla güncellendi!' 
+        text: '✓ Rol başarıyla güncellendi!' 
       })
 
       setTimeout(() => setMessage({ type: '', text: '' }), 3000)
@@ -218,36 +216,36 @@ async function handleUpdateUser(e: React.FormEvent) {
   }
 
   return (
-    <div>
+    <div className="bg-white shadow-lg rounded-2xl overflow-hidden border-2 border-vip-gold/20">
       {/* Mesaj */}
       {message.text && (
-        <div className={`mx-6 mt-6 p-4 rounded-lg ${
+        <div className={`mx-6 mt-6 p-4 rounded-xl border-2 ${
           message.type === 'success' 
-            ? 'bg-green-50 text-green-800 border border-green-200' 
-            : 'bg-red-50 text-red-800 border border-red-200'
+            ? 'bg-green-50 text-green-800 border-green-300' 
+            : 'bg-red-50 text-red-800 border-red-300'
         }`}>
-          {message.text}
+          <p className="font-semibold">{message.text}</p>
         </div>
       )}
 
-      {/* İstatistik Özeti + Yeni Kullanıcı Butonu */}
-      <div className="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
-        <div className="flex items-center gap-6 text-sm">
-          <span className="text-gray-600">
-            Toplam: <span className="font-semibold text-gray-900">{userList.length}</span>
+      {/* Header - İstatistik + Buton */}
+      <div className="px-6 py-5 border-b-2 border-vip-gold/20 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-linear-to-br from-gray-50 to-white">
+        <div className="flex flex-wrap items-center gap-4 text-sm">
+          <span className="text-gray-700">
+            Toplam: <span className="font-bold text-vip-navy text-lg">{userList.length}</span>
           </span>
           {ROLES.map(role => {
             const count = userList.filter(u => u.role === role.value).length
             return (
-              <span key={role.value} className="text-gray-600">
-                {role.label}: <span className="font-semibold text-gray-900">{count}</span>
+              <span key={role.value} className="text-gray-700">
+                {role.label}: <span className="font-bold text-vip-navy">{count}</span>
               </span>
             )
           })}
         </div>
         <button
           onClick={() => setShowAddModal(true)}
-          className="bg-blue-600 text-white px-4 py-2 rounded-lg font-medium hover:bg-blue-700 transition-colors text-sm"
+          className="bg-vip-navy text-white px-6 py-3 rounded-xl font-bold hover:bg-vip-gold hover:text-vip-navy transition-all shadow-md hover:shadow-lg whitespace-nowrap"
         >
           + Yeni Kullanıcı
         </button>
@@ -255,28 +253,28 @@ async function handleUpdateUser(e: React.FormEvent) {
 
       {/* Kullanıcı Tablosu */}
       <div className="overflow-x-auto">
-        <table className="min-w-full divide-y divide-gray-200">
+        <table className="min-w-full divide-y-2 divide-gray-200">
           <thead className="bg-gray-50">
             <tr>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th className="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">
                 Kullanıcı
               </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th className="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">
                 E-posta
               </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th className="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">
                 Telefon
               </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th className="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">
                 Rol
               </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th className="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">
                 Kayıt Tarihi
               </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Kullanıcı Rolü
+              <th className="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">
+                Rol Değiştir
               </th>
-              <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th className="px-6 py-4 text-right text-xs font-bold text-gray-700 uppercase tracking-wider">
                 İşlemler
               </th>
             </tr>
@@ -285,9 +283,9 @@ async function handleUpdateUser(e: React.FormEvent) {
             {userList.map(user => {
               const roleInfo = getRoleInfo(user.role)
               return (
-                <tr key={user.id} className="hover:bg-gray-50">
+                <tr key={user.id} className="hover:bg-gray-50 transition-colors">
                   <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm font-medium text-gray-900">
+                    <div className="text-sm font-bold text-gray-900">
                       {user.full_name || 'İsimsiz Kullanıcı'}
                     </div>
                     <div className="text-xs text-gray-500 font-mono">
@@ -303,11 +301,11 @@ async function handleUpdateUser(e: React.FormEvent) {
                     </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
-                    <span className={`px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${roleInfo.color}`}>
+                    <span className={`px-3 py-1.5 inline-flex text-xs leading-5 font-bold rounded-full ${roleInfo.color}`}>
                       {roleInfo.label}
                     </span>
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
                     {formatDate(user.created_at)}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm">
@@ -315,7 +313,7 @@ async function handleUpdateUser(e: React.FormEvent) {
                       value={user.role}
                       onChange={(e) => updateUserRole(user.id, e.target.value)}
                       disabled={updating === user.id}
-                      className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-100 disabled:cursor-not-allowed"
+                      className="block w-full px-3 py-2 border-2 border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-vip-gold focus:border-vip-gold disabled:bg-gray-100 disabled:cursor-not-allowed font-medium"
                     >
                       {ROLES.map(role => (
                         <option key={role.value} value={role.value}>
@@ -324,25 +322,25 @@ async function handleUpdateUser(e: React.FormEvent) {
                       ))}
                     </select>
                     {updating === user.id && (
-                      <div className="text-xs text-gray-500 mt-1">
+                      <div className="text-xs text-gray-500 mt-1 font-medium">
                         Güncelleniyor...
                       </div>
                     )}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-right text-sm">
-                  <button
-                    onClick={() => openEditModal(user)}
-                    className="text-blue-600 hover:text-blue-900 font-medium mr-4"
-                  >
-                    Düzenle
-                  </button>
-                  <button
-                    onClick={() => handleDeleteUser(user.id, user.full_name || 'Bu kullanıcı')}
-                    className="text-red-600 hover:text-red-900 font-medium"
-                  >
-                    Sil
-                  </button>
-                </td>
+                    <button
+                      onClick={() => openEditModal(user)}
+                      className="text-blue-600 hover:text-blue-900 font-bold mr-4 transition-colors"
+                    >
+                      Düzenle
+                    </button>
+                    <button
+                      onClick={() => handleDeleteUser(user.id, user.full_name || 'Bu kullanıcı')}
+                      className="text-red-600 hover:text-red-900 font-bold transition-colors"
+                    >
+                      Sil
+                    </button>
+                  </td>
                 </tr>
               )
             })}
@@ -350,25 +348,25 @@ async function handleUpdateUser(e: React.FormEvent) {
         </table>
 
         {userList.length === 0 && (
-          <div className="text-center py-12">
-            <span className="text-4xl">👥</span>
-            <p className="mt-2 text-gray-500">Henüz kullanıcı yok</p>
+          <div className="text-center py-16">
+            <span className="text-6xl">👥</span>
+            <p className="mt-4 text-gray-500 text-lg">Henüz kullanıcı yok</p>
           </div>
         )}
       </div>
 
       {/* Yeni Kullanıcı Modal */}
       {showAddModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg max-w-md w-full p-6">
+        <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4 backdrop-blur-sm">
+          <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border-2 border-vip-gold">
             <div className="flex justify-between items-center mb-6">
-              <h2 className="text-2xl font-bold text-gray-900">Yeni Kullanıcı Ekle</h2>
+              <h2 className="text-2xl font-bold text-vip-navy">Yeni Kullanıcı Ekle</h2>
               <button
                 onClick={() => {
                   setShowAddModal(false)
-                  setMessage({ type: '', text: '' }) // Mesajı temizle
+                  setMessage({ type: '', text: '' })
                 }}
-                className="text-gray-400 hover:text-gray-600 text-2xl"
+                className="text-gray-400 hover:text-vip-navy text-3xl transition-colors"
               >
                 ×
               </button>
@@ -376,48 +374,49 @@ async function handleUpdateUser(e: React.FormEvent) {
 
             {/* Modal İçi Hata Mesajı */}
             {message.text && message.type === 'error' && (
-              <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg">
-                <p className="text-sm text-red-800">{message.text}</p>
+              <div className="mb-4 p-4 bg-red-50 border-2 border-red-300 rounded-xl">
+                <p className="text-sm text-red-800 font-semibold">{message.text}</p>
               </div>
             )}
 
             <form onSubmit={handleAddUser} className="space-y-4">
               {/* Şifre Uyarısı */}
-              <div className="bg-yellow-50 border-l-4 border-yellow-400 p-4">
+              <div className="bg-yellow-50 border-l-4 border-yellow-400 p-4 rounded-lg">
                 <div className="flex">
-                  <div className="flex-shrink-0">
+                  <div className="shrink-0">
                     <span className="text-yellow-400 text-xl">⚠️</span>
                   </div>
                   <div className="ml-3">
-                    <p className="text-sm text-yellow-700">
+                    <p className="text-sm text-yellow-800 font-semibold">
                       <strong>Önemli:</strong> Kullanıcı şifresini not edin! Şifre bir daha görüntülenemez.
                     </p>
                   </div>
                 </div>
               </div>
+
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-bold text-gray-700 mb-2">
                   Email *
                 </label>
                 <input
                   type="email"
                   value={formData.email}
                   onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-vip-gold focus:border-vip-gold outline-none transition-all"
                   placeholder="ornek@email.com"
                   required
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-bold text-gray-700 mb-2">
                   Şifre *
                 </label>
                 <input
                   type="password"
                   value={formData.password}
                   onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-vip-gold focus:border-vip-gold outline-none transition-all"
                   placeholder="En az 6 karakter"
                   minLength={6}
                   required
@@ -425,40 +424,40 @@ async function handleUpdateUser(e: React.FormEvent) {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-bold text-gray-700 mb-2">
                   Ad Soyad *
                 </label>
                 <input
                   type="text"
                   value={formData.full_name}
                   onChange={(e) => setFormData({ ...formData, full_name: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-vip-gold focus:border-vip-gold outline-none transition-all"
                   placeholder="Ahmet Yılmaz"
                   required
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-bold text-gray-700 mb-2">
                   Telefon
                 </label>
                 <input
                   type="tel"
                   value={formData.phone}
                   onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-vip-gold focus:border-vip-gold outline-none transition-all"
                   placeholder="05XX XXX XX XX"
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-bold text-gray-700 mb-2">
                   Rol *
                 </label>
                 <select
                   value={formData.role}
                   onChange={(e) => setFormData({ ...formData, role: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-vip-gold focus:border-vip-gold outline-none transition-all font-medium"
                   required
                 >
                   {ROLES.map(role => (
@@ -473,14 +472,14 @@ async function handleUpdateUser(e: React.FormEvent) {
                 <button
                   type="button"
                   onClick={() => setShowAddModal(false)}
-                  className="flex-1 px-4 py-2 border border-gray-300 rounded-lg font-medium text-gray-700 hover:bg-gray-50 transition-colors"
+                  className="flex-1 px-6 py-3 border-2 border-gray-300 rounded-xl font-bold text-gray-700 hover:bg-gray-50 transition-all"
                 >
                   İptal
                 </button>
                 <button
                   type="submit"
                   disabled={loading}
-                  className="flex-1 bg-blue-600 text-white px-4 py-2 rounded-lg font-medium hover:bg-blue-700 disabled:bg-blue-300 disabled:cursor-not-allowed transition-colors"
+                  className="flex-1 bg-vip-navy text-white px-6 py-3 rounded-xl font-bold hover:bg-vip-gold hover:text-vip-navy disabled:bg-gray-300 disabled:cursor-not-allowed transition-all shadow-lg"
                 >
                   {loading ? 'Ekleniyor...' : 'Ekle'}
                 </button>
@@ -490,138 +489,137 @@ async function handleUpdateUser(e: React.FormEvent) {
         </div>
       )}
 
+      {/* Kullanıcı Düzenleme Modal */}
+      {showEditModal && editingUser && (
+        <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4 backdrop-blur-sm">
+          <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border-2 border-vip-gold">
+            <div className="flex justify-between items-center mb-6">
+              <h2 className="text-2xl font-bold text-vip-navy">Kullanıcı Düzenle</h2>
+              <button
+                onClick={() => {
+                  setShowEditModal(false)
+                  setEditingUser(null)
+                  setMessage({ type: '', text: '' })
+                }}
+                className="text-gray-400 hover:text-vip-navy text-3xl transition-colors"
+              >
+                ×
+              </button>
+            </div>
 
-{/* Kullanıcı Düzenleme Modal */}
-{showEditModal && editingUser && (
-  <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-    <div className="bg-white rounded-lg max-w-md w-full p-6">
-      <div className="flex justify-between items-center mb-6">
-        <h2 className="text-2xl font-bold text-gray-900">Kullanıcı Düzenle</h2>
-        <button
-          onClick={() => {
-            setShowEditModal(false)
-            setEditingUser(null)
-            setMessage({ type: '', text: '' })
-          }}
-          className="text-gray-400 hover:text-gray-600 text-2xl"
-        >
-          ×
-        </button>
-      </div>
+            {/* Modal İçi Hata Mesajı */}
+            {message.text && message.type === 'error' && (
+              <div className="mb-4 p-4 bg-red-50 border-2 border-red-300 rounded-xl">
+                <p className="text-sm text-red-800 font-semibold">{message.text}</p>
+              </div>
+            )}
 
-      {/* Modal İçi Hata Mesajı */}
-      {message.text && message.type === 'error' && (
-        <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg">
-          <p className="text-sm text-red-800">{message.text}</p>
+            <form onSubmit={handleUpdateUser} className="space-y-4">
+              {/* Kullanıcı ID Göster */}
+              <div className="bg-gray-50 p-4 rounded-xl border-2 border-gray-200">
+                <p className="text-xs text-gray-500 font-bold">Kullanıcı ID</p>
+                <p className="text-sm font-mono text-gray-700 mt-1">{editingUser.id.slice(0, 16)}...</p>
+              </div>
+
+              <div>
+                <label className="block text-sm font-bold text-gray-700 mb-2">
+                  Email
+                </label>
+                <input
+                  type="email"
+                  value={editFormData.email}
+                  onChange={(e) => setEditFormData({ ...editFormData, email: e.target.value })}
+                  className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-vip-gold focus:border-vip-gold outline-none transition-all"
+                  placeholder="ornek@email.com"
+                  required
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-bold text-gray-700 mb-2">
+                  Yeni Şifre <span className="text-gray-400 font-normal">(opsiyonel)</span>
+                </label>
+                <input
+                  type="password"
+                  value={editFormData.password}
+                  onChange={(e) => setEditFormData({ ...editFormData, password: e.target.value })}
+                  className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-vip-gold focus:border-vip-gold outline-none transition-all"
+                  placeholder="Boş bırakılırsa değişmez"
+                  minLength={6}
+                />
+                <p className="mt-2 text-xs text-gray-500 font-medium">
+                  Şifre değiştirmek istemiyorsanız boş bırakın
+                </p>
+              </div>
+
+              <div>
+                <label className="block text-sm font-bold text-gray-700 mb-2">
+                  Ad Soyad *
+                </label>
+                <input
+                  type="text"
+                  value={editFormData.full_name}
+                  onChange={(e) => setEditFormData({ ...editFormData, full_name: e.target.value })}
+                  className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-vip-gold focus:border-vip-gold outline-none transition-all"
+                  placeholder="Ahmet Yılmaz"
+                  required
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-bold text-gray-700 mb-2">
+                  Telefon
+                </label>
+                <input
+                  type="tel"
+                  value={editFormData.phone}
+                  onChange={(e) => setEditFormData({ ...editFormData, phone: e.target.value })}
+                  className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-vip-gold focus:border-vip-gold outline-none transition-all"
+                  placeholder="05XX XXX XX XX"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-bold text-gray-700 mb-2">
+                  Rol *
+                </label>
+                <select
+                  value={editFormData.role}
+                  onChange={(e) => setEditFormData({ ...editFormData, role: e.target.value })}
+                  className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-vip-gold focus:border-vip-gold outline-none transition-all font-medium"
+                  required
+                >
+                  {ROLES.map(role => (
+                    <option key={role.value} value={role.value}>
+                      {role.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="flex gap-3 pt-4">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowEditModal(false)
+                    setEditingUser(null)
+                  }}
+                  className="flex-1 px-6 py-3 border-2 border-gray-300 rounded-xl font-bold text-gray-700 hover:bg-gray-50 transition-all"
+                >
+                  İptal
+                </button>
+                <button
+                  type="submit"
+                  disabled={loading}
+                  className="flex-1 bg-vip-navy text-white px-6 py-3 rounded-xl font-bold hover:bg-vip-gold hover:text-vip-navy disabled:bg-gray-300 disabled:cursor-not-allowed transition-all shadow-lg"
+                >
+                  {loading ? 'Güncelleniyor...' : 'Güncelle'}
+                </button>
+              </div>
+            </form>
+          </div>
         </div>
       )}
-
-      <form onSubmit={handleUpdateUser} className="space-y-4">
-        {/* Kullanıcı ID Göster */}
-        <div className="bg-gray-50 p-3 rounded-lg">
-          <p className="text-xs text-gray-500">Kullanıcı ID</p>
-          <p className="text-sm font-mono text-gray-700">{editingUser.id.slice(0, 16)}...</p>
-        </div>
-
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
-            Email
-          </label>
-          <input
-            type="email"
-            value={editFormData.email}
-            onChange={(e) => setEditFormData({ ...editFormData, email: e.target.value })}
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            placeholder="ornek@email.com"
-            required
-          />
-        </div>
-
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
-            Yeni Şifre <span className="text-gray-400 font-normal">(opsiyonel)</span>
-          </label>
-          <input
-            type="password"
-            value={editFormData.password}
-            onChange={(e) => setEditFormData({ ...editFormData, password: e.target.value })}
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            placeholder="Boş bırakılırsa değişmez"
-            minLength={6}
-          />
-          <p className="mt-1 text-xs text-gray-500">
-            Şifre değiştirmek istemiyorsanız boş bırakın
-          </p>
-        </div>
-
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
-            Ad Soyad *
-          </label>
-          <input
-            type="text"
-            value={editFormData.full_name}
-            onChange={(e) => setEditFormData({ ...editFormData, full_name: e.target.value })}
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            placeholder="Ahmet Yılmaz"
-            required
-          />
-        </div>
-
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
-            Telefon
-          </label>
-          <input
-            type="tel"
-            value={editFormData.phone}
-            onChange={(e) => setEditFormData({ ...editFormData, phone: e.target.value })}
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            placeholder="05XX XXX XX XX"
-          />
-        </div>
-
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
-            Rol *
-          </label>
-          <select
-            value={editFormData.role}
-            onChange={(e) => setEditFormData({ ...editFormData, role: e.target.value })}
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            required
-          >
-            {ROLES.map(role => (
-              <option key={role.value} value={role.value}>
-                {role.label}
-              </option>
-            ))}
-          </select>
-        </div>
-
-        <div className="flex gap-3 pt-4">
-          <button
-            type="button"
-            onClick={() => {
-              setShowEditModal(false)
-              setEditingUser(null)
-            }}
-            className="flex-1 px-4 py-2 border border-gray-300 rounded-lg font-medium text-gray-700 hover:bg-gray-50 transition-colors"
-          >
-            İptal
-          </button>
-          <button
-            type="submit"
-            disabled={loading}
-            className="flex-1 bg-blue-600 text-white px-4 py-2 rounded-lg font-medium hover:bg-blue-700 disabled:bg-blue-300 disabled:cursor-not-allowed transition-colors"
-          >
-            {loading ? 'Güncelleniyor...' : 'Güncelle'}
-          </button>
-        </div>
-      </form>
-    </div>
-  </div>
-)}
     </div>
   )
 }

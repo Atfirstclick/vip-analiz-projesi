@@ -124,7 +124,7 @@ export default function ProductManagement({ initialProducts }: { initialProducts
         </div>
         <button
           onClick={() => setShowForm(true)}
-          className="bg-blue-600 text-white px-6 py-3 rounded-lg font-medium hover:bg-blue-700 transition-colors"
+          className="bg-vip-navy text-white px-6 py-3 rounded-xl font-bold hover:bg-vip-gold hover:text-vip-navy transition-all shadow-md hover:shadow-lg"
         >
           + Yeni Ürün Ekle
         </button>
@@ -140,7 +140,7 @@ export default function ProductManagement({ initialProducts }: { initialProducts
             }`}
           >
             {/* Ürün Görseli */}
-            <div className="h-48 bg-gradient-to-br from-blue-50 to-indigo-50 flex items-center justify-center">
+            <div className="h-48 bg-linear-to-br from-blue-50 to-indigo-50 flex items-center justify-center">
               {product.image_url ? (
                 <img src={product.image_url} alt={product.name} className="w-full h-full object-cover" />
               ) : (
