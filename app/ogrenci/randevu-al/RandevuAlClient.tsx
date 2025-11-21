@@ -131,7 +131,6 @@ export default function RandevuAlClient({ subjects }: RandevuAlClientProps) {
   async function loadAvailableDates() {
     setLoading(true)
     try {
-      // Öğretmenin tüm müsaitliklerini al
       const { data: availabilities, error: availError } = await supabase
         .from('availabilities')
         .select('day_of_week, start_time, end_time')
@@ -146,7 +145,6 @@ export default function RandevuAlClient({ subjects }: RandevuAlClientProps) {
         return
       }
 
-      // Bu aydaki tüm günleri kontrol et
       const year = currentMonth.getFullYear()
       const month = currentMonth.getMonth()
       const daysInMonth = new Date(year, month + 1, 0).getDate()
@@ -158,20 +156,16 @@ export default function RandevuAlClient({ subjects }: RandevuAlClientProps) {
       for (let day = 1; day <= daysInMonth; day++) {
         const date = new Date(year, month, day)
         
-        // Geçmiş tarih mi?
         if (date < today) continue
 
         const dayOfWeek = date.getDay()
         
-        // Bu günde öğretmen müsait mi?
         const dayAvailability = availabilities.filter(a => a.day_of_week === dayOfWeek)
         
         if (dayAvailability.length === 0) continue
 
-        // Tarih string'i
         const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`
 
-        // Bu tarihte en az 1 boş slot var mı kontrol et
         const { data: existingAppointments } = await supabase
           .from('appointments')
           .select('start_time, end_time')
@@ -179,7 +173,6 @@ export default function RandevuAlClient({ subjects }: RandevuAlClientProps) {
           .eq('appointment_date', dateStr)
           .not('status', 'in', '(cancelled_by_student,cancelled_by_teacher)')
 
-        // Boş slot sayısını hesapla
         let hasAvailableSlot = false
 
         for (const avail of dayAvailability) {
@@ -326,7 +319,7 @@ export default function RandevuAlClient({ subjects }: RandevuAlClientProps) {
     }
   }
 
-  // Tarih formatla (görüntüleme için)
+  // Tarih formatla
   function formatDate(dateStr: string) {
     const date = new Date(dateStr)
     const days = ['Pazar', 'Pazartesi', 'Salı', 'Çarşamba', 'Perşembe', 'Cuma', 'Cumartesi']
@@ -336,29 +329,32 @@ export default function RandevuAlClient({ subjects }: RandevuAlClientProps) {
   }
 
   return (
-    <div className="space-y-8">
-      {/* Mesaj */}
+    <div className="space-y-6">
+      {/* Mesaj Kartı */}
       {message.text && (
-        <div className={`p-4 rounded-lg ${
-          message.type === 'success' ? 'bg-green-50 text-green-800 border border-green-200' :
-          message.type === 'warning' ? 'bg-yellow-50 text-yellow-800 border border-yellow-200' :
-          'bg-red-50 text-red-800 border border-red-200'
+        <div className={`p-4 rounded-xl border-2 ${
+          message.type === 'success' 
+            ? 'bg-green-50 text-green-800 border-green-300' 
+            : message.type === 'warning' 
+            ? 'bg-yellow-50 text-yellow-800 border-yellow-300' 
+            : 'bg-red-50 text-red-800 border-red-300'
         }`}>
-          {message.text}
+          <p className="font-medium">{message.text}</p>
         </div>
       )}
 
       {/* 1. Ders Seç */}
-      <div className="bg-white shadow rounded-lg p-6">
-        <label className="block text-lg font-semibold text-gray-900 mb-3">
-          1️⃣ Ders Seçin
+      <div className="bg-white shadow-lg rounded-2xl p-6 border-2 border-vip-gold/20">
+        <label className="flex items-center gap-2 text-xl font-bold text-vip-navy mb-4">
+          <span className="text-2xl">1️⃣</span>
+          Ders Seçin
         </label>
         <select
           value={selectedSubject}
           onChange={(e) => setSelectedSubject(e.target.value)}
-          className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-lg"
+          className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-vip-gold focus:border-vip-gold outline-none text-lg transition-all"
         >
-          <option value="">Ders seçin...</option>
+          <option value="">📚 Ders seçin...</option>
           {subjects.map((subject) => (
             <option key={subject.id} value={subject.id}>
               {subject.name}
@@ -369,17 +365,18 @@ export default function RandevuAlClient({ subjects }: RandevuAlClientProps) {
 
       {/* 2. Öğretmen Seç */}
       {selectedSubject && (
-        <div className="bg-white shadow rounded-lg p-6">
-          <label className="block text-lg font-semibold text-gray-900 mb-3">
-            2️⃣ Öğretmen Seçin
+        <div className="bg-white shadow-lg rounded-2xl p-6 border-2 border-vip-gold/20">
+          <label className="flex items-center gap-2 text-xl font-bold text-vip-navy mb-4">
+            <span className="text-2xl">2️⃣</span>
+            Öğretmen Seçin
           </label>
           <select
             value={selectedTeacher}
             onChange={(e) => setSelectedTeacher(e.target.value)}
             disabled={loading}
-            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-gray-100 text-lg"
+            className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-vip-gold focus:border-vip-gold outline-none disabled:bg-gray-100 text-lg transition-all"
           >
-            <option value="">Öğretmen seçin...</option>
+            <option value="">👨‍🏫 Öğretmen seçin...</option>
             {teachers.map((teacher) => (
               <option key={teacher.id} value={teacher.id}>
                 {teacher.profiles?.full_name || 'İsimsiz'}
@@ -391,19 +388,21 @@ export default function RandevuAlClient({ subjects }: RandevuAlClientProps) {
 
       {/* 3. Takvim */}
       {selectedTeacher && (
-        <div className="bg-white shadow rounded-lg p-6">
-          <h2 className="text-lg font-semibold text-gray-900 mb-4">
-            3️⃣ Tarih Seçin
+        <div className="bg-white shadow-lg rounded-2xl p-6 border-2 border-vip-gold/20">
+          <h2 className="flex items-center gap-2 text-xl font-bold text-vip-navy mb-4">
+            <span className="text-2xl">3️⃣</span>
+            Tarih Seçin
           </h2>
           
           {loading ? (
-            <div className="text-center py-8">
-              <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-              <p className="mt-2 text-gray-600">Müsait tarihler yükleniyor...</p>
+            <div className="text-center py-12">
+              <div className="inline-block animate-spin rounded-full h-12 w-12 border-4 border-vip-gold border-t-transparent"></div>
+              <p className="mt-4 text-gray-600 font-medium">Müsait tarihler yükleniyor...</p>
             </div>
           ) : availableDates.length === 0 ? (
-            <div className="text-center py-8 text-gray-600">
-              Bu ay için müsait tarih bulunamadı.
+            <div className="text-center py-12 bg-gray-50 rounded-xl">
+              <p className="text-xl text-gray-600">📅</p>
+              <p className="mt-2 text-gray-600">Bu ay için müsait tarih bulunamadı.</p>
             </div>
           ) : (
             <MonthlyCalendar
@@ -419,12 +418,13 @@ export default function RandevuAlClient({ subjects }: RandevuAlClientProps) {
 
       {/* 4. Saat Seç */}
       {selectedDate && availableSlots.length > 0 && (
-        <div className="bg-white shadow rounded-lg p-6">
-          <h2 className="text-lg font-semibold text-gray-900 mb-2">
-            4️⃣ Saat Seçin
+        <div className="bg-white shadow-lg rounded-2xl p-6 border-2 border-vip-gold/20">
+          <h2 className="flex items-center gap-2 text-xl font-bold text-vip-navy mb-2">
+            <span className="text-2xl">4️⃣</span>
+            Saat Seçin
           </h2>
-          <p className="text-sm text-gray-600 mb-4">
-            {formatDate(selectedDate)}
+          <p className="text-sm text-gray-600 mb-6 ml-8">
+            📅 {formatDate(selectedDate)}
           </p>
           
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
@@ -432,10 +432,10 @@ export default function RandevuAlClient({ subjects }: RandevuAlClientProps) {
               <button
                 key={slot}
                 onClick={() => setSelectedSlot(slot)}
-                className={`px-4 py-3 rounded-lg border-2 font-medium transition-all ${
+                className={`px-4 py-3 rounded-xl border-2 font-semibold transition-all ${
                   selectedSlot === slot
-                    ? 'border-blue-500 bg-blue-50 text-blue-700'
-                    : 'border-gray-300 bg-white text-gray-700 hover:border-blue-300'
+                    ? 'border-vip-gold bg-vip-gold text-vip-navy shadow-lg scale-105'
+                    : 'border-gray-300 bg-white text-gray-700 hover:border-vip-gold hover:bg-vip-gold/10'
                 }`}
               >
                 {slot}
@@ -447,29 +447,37 @@ export default function RandevuAlClient({ subjects }: RandevuAlClientProps) {
 
       {/* 5. Not Ekle */}
       {selectedSlot && (
-        <div className="bg-white shadow rounded-lg p-6">
-          <label className="block text-lg font-semibold text-gray-900 mb-3">
-            5️⃣ Not Ekle (Opsiyonel)
+        <div className="bg-white shadow-lg rounded-2xl p-6 border-2 border-vip-gold/20">
+          <label className="flex items-center gap-2 text-xl font-bold text-vip-navy mb-4">
+            <span className="text-2xl">5️⃣</span>
+            Not Ekle (Opsiyonel)
           </label>
           <textarea
             value={notes}
             onChange={(e) => setNotes(e.target.value)}
             rows={3}
             placeholder="Randevu hakkında not ekleyebilirsiniz..."
-            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-vip-gold focus:border-vip-gold outline-none transition-all"
           />
         </div>
       )}
 
       {/* 6. Onayla */}
       {selectedSlot && (
-        <div className="bg-white shadow rounded-lg p-6">
+        <div className="bg-white shadow-lg rounded-2xl p-6 border-2 border-vip-gold/20">
           <button
             onClick={handleCreateAppointment}
             disabled={loading}
-            className="w-full bg-blue-600 text-white px-6 py-4 rounded-lg font-semibold text-lg hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors"
+            className="w-full bg-vip-navy text-white px-6 py-4 rounded-xl font-bold text-lg hover:bg-vip-gold hover:text-vip-navy disabled:bg-gray-400 disabled:cursor-not-allowed transition-all shadow-lg hover:shadow-xl"
           >
-            {loading ? 'Randevu Oluşturuluyor...' : '✓ Randevuyu Onayla'}
+            {loading ? (
+              <span className="flex items-center justify-center gap-2">
+                <span className="animate-spin">⏳</span>
+                Randevu Oluşturuluyor...
+              </span>
+            ) : (
+              '✓ Randevuyu Onayla'
+            )}
           </button>
         </div>
       )}

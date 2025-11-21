@@ -1,6 +1,7 @@
 import { redirect } from 'next/navigation'
 import { getCurrentUser, createClient } from '@/lib/supabase/server'
 import Link from 'next/link'
+import Logo from '@/components/ui/Logo'
 
 export default async function OgrenciLayout({
   children,
@@ -10,7 +11,7 @@ export default async function OgrenciLayout({
   const user = await getCurrentUser()
   
   if (!user) {
-    redirect('/login')
+    redirect('/giris')
   }
 
   const supabase = await createClient()
@@ -28,56 +29,100 @@ export default async function OgrenciLayout({
   }
 
   return (
-    <div className="min-h-screen bg-gray-100">
-      {/* Öğrenci Navigation */}
-      <nav className="bg-white shadow-sm border-b">
+    <div className="min-h-screen bg-linear-to-br from-gray-50 to-gray-100">
+      {/* Navbar */}
+      <nav className="bg-white shadow-md border-b-2 border-vip-gold/20">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between h-16">
-            <div className="flex">
-              <div className="shrink-0 flex items-center">
-                <span className="text-2xl">👨‍🎓</span>
-                <span className="ml-2 text-xl font-bold text-gray-900">
-                  Öğrenci Paneli
-                </span>
-              </div>
-              <div className="hidden sm:ml-6 sm:flex sm:space-x-8">
+          <div className="flex justify-between h-20">
+            {/* Sol - Logo & Nav Links */}
+            <div className="flex items-center gap-8">
+              {/* Logo */}
+              <Link href="/ogrenci" className="flex items-center gap-3">
+                <Logo size="sm" />
+                <div>
+                  <span className="block text-lg font-bold text-vip-navy">
+                    Öğrenci Paneli
+                  </span>
+                  <span className="block text-xs text-gray-500">
+                    VipAnaliz
+                  </span>
+                </div>
+              </Link>
+
+              {/* Navigation Links */}
+              <div className="hidden md:flex items-center gap-1">
                 <Link
                   href="/ogrenci"
-                  className="border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700 inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium"
+                  className="px-4 py-2 rounded-lg text-sm font-medium text-gray-700 hover:bg-vip-gold/10 hover:text-vip-navy transition-all"
                 >
-                  Dashboard
+                  📊 Dashboard
                 </Link>
                 <Link
                   href="/ogrenci/randevu-al"
-                  className="border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700 inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium"
+                  className="px-4 py-2 rounded-lg text-sm font-medium text-gray-700 hover:bg-vip-gold/10 hover:text-vip-navy transition-all"
                 >
                   📅 Randevu Al
                 </Link>
                 <Link
                   href="/ogrenci/randevularim"
-                  className="border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700 inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium"
+                  className="px-4 py-2 rounded-lg text-sm font-medium text-gray-700 hover:bg-vip-gold/10 hover:text-vip-navy transition-all"
                 >
                   📋 Randevularım
                 </Link>
               </div>
             </div>
+
+            {/* Sağ - User Info & Actions */}
             <div className="flex items-center gap-4">
-              <span className="text-sm text-gray-600">
-                Hoş geldin, <span className="font-semibold">{profile?.full_name}</span>
-              </span>
+              {/* User Info */}
+              <div className="hidden sm:flex items-center gap-2 px-4 py-2 bg-vip-gold/10 rounded-lg">
+                <div className="w-8 h-8 rounded-full bg-vip-navy text-white flex items-center justify-center font-bold">
+                  {profile?.full_name?.charAt(0).toUpperCase() || 'Ö'}
+                </div>
+                <div className="text-sm">
+                  <p className="text-gray-500 text-xs">Hoş geldin,</p>
+                  <p className="font-semibold text-vip-navy">
+                    {profile?.full_name || 'Öğrenci'}
+                  </p>
+                </div>
+              </div>
+
+              {/* Ana Sayfa Link */}
               <Link
                 href="/"
-                className="text-sm text-gray-500 hover:text-gray-700"
+                className="px-4 py-2 text-sm font-medium text-gray-600 hover:text-vip-navy transition-colors"
               >
-                Ana Sayfa
+                ← Ana Sayfa
               </Link>
             </div>
           </div>
         </div>
+
+        {/* Mobile Navigation */}
+        <div className="md:hidden border-t border-gray-200 px-4 py-3 flex gap-2 overflow-x-auto">
+          <Link
+            href="/ogrenci"
+            className="px-3 py-1.5 rounded-lg text-xs font-medium text-gray-700 hover:bg-vip-gold/10 hover:text-vip-navy whitespace-nowrap"
+          >
+            📊 Dashboard
+          </Link>
+          <Link
+            href="/ogrenci/randevu-al"
+            className="px-3 py-1.5 rounded-lg text-xs font-medium text-gray-700 hover:bg-vip-gold/10 hover:text-vip-navy whitespace-nowrap"
+          >
+            📅 Randevu Al
+          </Link>
+          <Link
+            href="/ogrenci/randevularim"
+            className="px-3 py-1.5 rounded-lg text-xs font-medium text-gray-700 hover:bg-vip-gold/10 hover:text-vip-navy whitespace-nowrap"
+          >
+            📋 Randevularım
+          </Link>
+        </div>
       </nav>
 
       {/* Main Content */}
-      <main className="py-10">
+      <main className="py-8">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           {children}
         </div>

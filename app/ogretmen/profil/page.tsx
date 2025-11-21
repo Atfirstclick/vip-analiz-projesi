@@ -29,7 +29,7 @@ export default async function OgretmenProfilPage() {
     .eq('id', user.id)
     .single()
 
-  // Verdiği dersleri al - İKİ ADIMDA
+  // Verdiği dersleri al
   const { data: teacherSubjects } = await supabase
     .from('teacher_subjects')
     .select('subject_id')
@@ -62,9 +62,13 @@ export default async function OgretmenProfilPage() {
 
   return (
     <div>
+      {/* Başlık */}
       <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900">👤 Profil Ayarları</h1>
-        <p className="mt-2 text-gray-600">
+        <h1 className="text-4xl font-bold text-vip-navy mb-2 flex items-center gap-3">
+          <span>👤</span>
+          Profil Ayarları
+        </h1>
+        <p className="text-lg text-gray-600">
           Profil bilgilerinizi görüntüleyin ve güncelleyin
         </p>
       </div>

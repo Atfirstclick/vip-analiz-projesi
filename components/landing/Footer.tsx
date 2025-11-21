@@ -26,7 +26,7 @@ export default function Footer() {
 
               {/* Adres */}
               <div className="mb-6 flex items-start gap-4">
-                <FaMapMarkerAlt className="text-vip-gold text-2xl flex-shrink-0 mt-1" />
+                <FaMapMarkerAlt className="text-vip-gold text-2xl shrink-0 mt-1" />
                 <div>
                   <h4 className="font-semibold text-lg mb-2">Adres</h4>
                   <p className="text-gray-300 leading-relaxed">
@@ -38,7 +38,7 @@ export default function Footer() {
 
               {/* Telefonlar */}
               <div className="mb-6 flex items-start gap-4">
-                <FaPhone className="text-vip-gold text-2xl flex-shrink-0 mt-1" />
+                <FaPhone className="text-vip-gold text-2xl shrink-0 mt-1" />
                 <div>
                   <h4 className="font-semibold text-lg mb-2">Telefon</h4>
                   <a 

@@ -175,64 +175,90 @@ export default function TakvimClient({
 
   return (
     <div>
-      <div className="flex justify-between items-center mb-6">
+      {/* Başlık ve Buton */}
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">Takvim Yönetimi</h1>
-          <p className="mt-2 text-gray-600">
+          <h1 className="text-4xl font-bold text-vip-navy mb-2">Takvim Yönetimi</h1>
+          <p className="text-lg text-gray-600">
             Uygun zamanlarınızı belirleyin ve düzenleyin
           </p>
         </div>
         <button
           onClick={handleAddNew}
-          className="bg-blue-600 text-white px-6 py-3 rounded-lg font-medium hover:bg-blue-700 transition-colors flex items-center gap-2"
+          className="bg-vip-navy text-white px-6 py-3 rounded-xl font-bold hover:bg-vip-gold hover:text-vip-navy transition-all flex items-center gap-2 shadow-lg hover:shadow-xl whitespace-nowrap"
         >
           <span className="text-xl">+</span>
           Yeni Müsaitlik Ekle
         </button>
       </div>
 
+      {/* Mesaj */}
       {message.text && (
-        <div className={`mb-6 p-4 rounded-lg ${
+        <div className={`mb-6 p-4 rounded-xl border-2 ${
           message.type === 'success' 
-            ? 'bg-green-50 text-green-800 border border-green-200' 
-            : 'bg-red-50 text-red-800 border border-red-200'
+            ? 'bg-green-50 text-green-800 border-green-300' 
+            : 'bg-red-50 text-red-800 border-red-300'
         }`}>
-          {message.text}
+          <p className="font-semibold">{message.text}</p>
         </div>
       )}
 
-      <div className="mb-6 grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <div className="bg-white p-4 rounded-lg shadow-sm border-l-4 border-blue-500">
-          <div className="text-sm text-gray-600">Toplam Müsaitlik</div>
-          <div className="text-2xl font-bold text-gray-900">{availabilities.length}</div>
-        </div>
-        <div className="bg-white p-4 rounded-lg shadow-sm border-l-4 border-green-500">
-          <div className="text-sm text-gray-600">Tekrarlayan</div>
-          <div className="text-2xl font-bold text-gray-900">
-            {availabilities.filter(a => a.is_recurring).length}
+      {/* İstatistik Kartları */}
+      <div className="mb-8 grid grid-cols-1 sm:grid-cols-3 gap-6">
+        {/* Toplam Müsaitlik */}
+        <div className="bg-white p-6 rounded-2xl shadow-lg border-l-4 border-blue-500 hover:shadow-xl transition-shadow">
+          <div className="flex items-center justify-between">
+            <div>
+              <div className="text-sm font-semibold text-gray-600 mb-1">Toplam Müsaitlik</div>
+              <div className="text-4xl font-bold text-blue-600">{availabilities.length}</div>
+            </div>
+            <div className="text-4xl opacity-20">📅</div>
           </div>
         </div>
-        <div className="bg-white p-4 rounded-lg shadow-sm border-l-4 border-purple-500">
-          <div className="text-sm text-gray-600">Haftalık Ders Saati</div>
-          <div className="text-2xl font-bold text-gray-900">
-            {availabilities.reduce((total, a) => {
-              const start = parseInt(a.start_time.split(':')[0])
-              const end = parseInt(a.end_time.split(':')[0])
-              return total + (end - start)
-            }, 0)} saat
+
+        {/* Tekrarlayan */}
+        <div className="bg-white p-6 rounded-2xl shadow-lg border-l-4 border-green-500 hover:shadow-xl transition-shadow">
+          <div className="flex items-center justify-between">
+            <div>
+              <div className="text-sm font-semibold text-gray-600 mb-1">Tekrarlayan</div>
+              <div className="text-4xl font-bold text-green-600">
+                {availabilities.filter(a => a.is_recurring).length}
+              </div>
+            </div>
+            <div className="text-4xl opacity-20">🔄</div>
+          </div>
+        </div>
+
+        {/* Haftalık Ders Saati */}
+        <div className="bg-white p-6 rounded-2xl shadow-lg border-l-4 border-purple-500 hover:shadow-xl transition-shadow">
+          <div className="flex items-center justify-between">
+            <div>
+              <div className="text-sm font-semibold text-gray-600 mb-1">Haftalık Ders Saati</div>
+              <div className="text-4xl font-bold text-purple-600">
+                {availabilities.reduce((total, a) => {
+                  const start = parseInt(a.start_time.split(':')[0])
+                  const end = parseInt(a.end_time.split(':')[0])
+                  return total + (end - start)
+                }, 0)} saat
+              </div>
+            </div>
+            <div className="text-4xl opacity-20">⏰</div>
           </div>
         </div>
       </div>
 
-      {/* 🆕 WeeklyCalendar'a appointments ve classSchedule geç */}
-      <WeeklyCalendar
-        availabilities={availabilities}
-        appointments={appointments}
-        classSchedule={classSchedule}
-        onSlotClick={handleSlotClick}
-        onAvailabilityClick={handleAvailabilityClick}
-      />
+      {/* Takvim */}
+      <div className="bg-white shadow-lg rounded-2xl p-6 border-2 border-vip-gold/20">
+        <WeeklyCalendar
+          availabilities={availabilities}
+          appointments={appointments}
+          classSchedule={classSchedule}
+          onSlotClick={handleSlotClick}
+          onAvailabilityClick={handleAvailabilityClick}
+        />
+      </div>
 
+      {/* Modal */}
       <AvailabilityModal
         isOpen={showModal}
         onClose={() => {

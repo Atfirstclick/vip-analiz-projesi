@@ -13,10 +13,14 @@ export default async function RandevuAlPage() {
 
   return (
     <div>
+      {/* Başlık */}
       <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900">📅 Randevu Al</h1>
-        <p className="mt-2 text-gray-600">
-          Öğretmenlerden özel ders randevusu alın
+        <h1 className="text-4xl font-bold text-vip-navy mb-2 flex items-center gap-3">
+          <span>📅</span>
+          Randevu Al
+        </h1>
+        <p className="text-lg text-gray-600">
+          Öğretmenlerden özel ders randevusu alın ve ders programınızı oluşturun
         </p>
       </div>
 

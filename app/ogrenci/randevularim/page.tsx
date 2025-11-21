@@ -77,9 +77,13 @@ export default async function RandevularimPage() {
 
   return (
     <div>
+      {/* Başlık */}
       <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900">📋 Randevularım</h1>
-        <p className="mt-2 text-gray-600">
+        <h1 className="text-4xl font-bold text-vip-navy mb-2 flex items-center gap-3">
+          <span>📋</span>
+          Randevularım
+        </h1>
+        <p className="text-lg text-gray-600">
           Tüm randevularınızı görüntüleyin ve yönetin
         </p>
       </div>
