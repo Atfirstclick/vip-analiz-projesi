@@ -14,8 +14,8 @@ const Navbar = () => {
     <nav className="fixed top-0 left-0 right-0 z-50 bg-white border-b-2 border-gray-100 shadow-sm">
       <Container>
         <div className="flex items-center justify-between py-5">
-          <Link href="/" className="flex items-center gap-4 group">
-            <div className="relative w-16 h-16 md:w-20 md:h-20 shrink-0">
+          <Link href="/" className="flex items-center gap-3 md:gap-4 group">
+            <div className="relative w-12 h-12 md:w-20 md:h-20 shrink-0">
               <Image
                 src="/images/logo.svg"
                 alt="VipAnaliz"
@@ -25,8 +25,8 @@ const Navbar = () => {
                 className="object-contain"
               />
             </div>
-            <div className="hidden sm:block">
-              <h1 className="text-lg md:text-xl lg:text-2xl font-bold text-vip-navy group-hover:text-vip-gold transition-colors">
+            <div>
+              <h1 className="text-sm md:text-xl lg:text-2xl font-bold text-vip-navy group-hover:text-vip-gold transition-colors leading-tight">
                 VipAnaliz Özel Öğretim Kursu
               </h1>
             </div>
